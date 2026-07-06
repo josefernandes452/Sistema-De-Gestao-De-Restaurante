@@ -1,0 +1,152 @@
+/* ============================================
+   SABOR ALMA - PALETA DE CORES
+   ============================================ */
+:root {
+    --verde-escuro: #1a3c2a;
+    --verde-claro: #2d5a3d;
+    --verde-destaque: #4a7c5c;
+    --dourado: #c9a84c;
+    --dourado-claro: #e8d5a3;
+    --creme: #f5f0e8;
+    --branco: #ffffff;
+    --preto: #1a1a1a;
+    --cinza: #6c757d;
+}
+
+/* ============================================
+   ESTILOS GERAIS
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--creme);
+    color: var(--preto);
+}
+
+a {
+    text-decoration: none;
+}
+
+/* ============================================
+   NAVBAR
+   ============================================ */
+.navbar {
+    box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+    padding: 12px 0;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.8) !important;
+    font-weight: 500;
+    padding: 8px 16px !important;
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--dourado) !important;
+}
+
+.nav-link.active {
+    color: var(--dourado) !important;
+}
+
+/* ============================================
+   HERO
+   ============================================ */
+.hero-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section .display-1 {
+    font-size: 4.5rem;
+    letter-spacing: 2px;
+}
+
+.btn-outline-light:hover {
+    background: var(--dourado);
+    color: var(--verde-escuro);
+    border-color: var(--dourado);
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+    transition: all 0.3s ease;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.1) !important;
+}
+
+/* ============================================
+   FORMULÁRIOS
+   ============================================ */
+.form-control:focus {
+    border-color: var(--dourado);
+    box-shadow: 0 0 0 0.2rem rgba(201, 168, 76, 0.25);
+}
+
+.btn-primary {
+    background: var(--dourado);
+    border-color: var(--dourado);
+    color: var(--verde-escuro);
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background: var(--verde-escuro);
+    border-color: var(--verde-escuro);
+    color: var(--dourado);
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+@media (max-width: 768px) {
+    .hero-section .display-1 {
+        font-size: 2.8rem;
+    }
+}
+
+:root {
+    --verde-escuro: #1a3c2a;
+    --verde-claro: #2d5a3d;
+    --dourado: #c9a84c;
+    --dourado-claro: #e8d5a3;
+    --creme: #f5f0e8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--creme); }
+
+.navbar { box-shadow: 0 2px 20px rgba(0,0,0,0.2); }
+.nav-link { color: rgba(255,255,255,0.8) !important; font-weight: 500; transition: all 0.3s; }
+.nav-link:hover { color: var(--dourado) !important; }
+.nav-link.active { color: var(--dourado) !important; }
+
+.card { border-radius: 16px; overflow: hidden; transition: all 0.3s; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.1) !important; }
+
+.form-control:focus { border-color: var(--dourado); box-shadow: 0 0 0 0.2rem rgba(201, 168, 76, 0.25); }
+
+.btn-primary { background: var(--dourado); border-color: var(--dourado); color: var(--verde-escuro); font-weight: 600; }
+.btn-primary:hover { background: var(--verde-escuro); border-color: var(--verde-escuro); color: var(--dourado); }
+
+@media (max-width: 768px) {
+    .hero-section .display-1 { font-size: 2.8rem; }
+}
