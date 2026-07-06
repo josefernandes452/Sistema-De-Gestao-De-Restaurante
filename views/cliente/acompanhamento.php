@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento - Sabor Alma</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: var(--verde-escuro);">
+        <div class="container">
+            <a class="navbar-brand" href="index.php">
+                <img src="../../assets/img/logo.png" alt="Sabor Alma" height="40">
+                <span class="fw-bold ms-2" style="color: var(--dourado);">Sabor Alma</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSite">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSite">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.php">Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="menu.php">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="reservas.php">Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="pedidos.php">Pedidos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.php">Entrar</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ACOMPANHAMENTO -->
+    <section style="padding-top: 100px; padding-bottom: 60px; background: var(--creme); min-height: 100vh;">
+        <div class="container">
+            <h2 class="text-center fw-bold" style="color: var(--verde-escuro);">
+                <i class="fas fa-clock" style="color: var(--dourado);"></i> Acompanhamento do Pedido
+            </h2>
+            <p class="text-center text-muted mb-4">Acompanhe o status do seu pedido em tempo real</p>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow-lg border-0 rounded-4 p-4">
+                        <div class="text-center mb-4">
+                            <h4 class="fw-bold">Pedido #<span id="numeroPedido">123</span></h4>
+                            <p class="text-muted">Atualizado em tempo real</p>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="text-center">
+                                    <div class="rounded-circle bg-success p-3" style="width: 60px; height: 60px; margin: 0 auto;">
+                                        <i class="fas fa-check text-white fs-4"></i>
+                                    </div>
+                                    <small class="d-block mt-2 fw-bold text-success">Recebido</small>
+                                </div>
+                                <div class="flex-grow-1 mx-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="rounded-circle bg-success p-3" style="width: 60px; height: 60px; margin: 0 auto;">
+                                        <i class="fas fa-check text-white fs-4"></i>
+                                    </div>
+                                    <small class="d-block mt-2 fw-bold text-success">Preparando</small>
+                                </div>
+                                <div class="flex-grow-1 mx-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 50%;"></div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="rounded-circle bg-secondary p-3" style="width: 60px; height: 60px; margin: 0 auto;">
+                                        <i class="fas fa-hourglass-half text-white fs-4"></i>
+                                    </div>
+                                    <small class="d-block mt-2 text-muted">Pronto</small>
+                                </div>
+                                <div class="flex-grow-1 mx-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="rounded-circle bg-secondary p-3" style="width: 60px; height: 60px; margin: 0 auto;">
+                                        <i class="fas fa-clock text-white fs-4"></i>
+                                    </div>
+                                    <small class="d-block mt-2 text-muted">Entregue</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Itens do Pedido -->
+                        <hr>
+                        <h6 class="fw-bold">Itens do Pedido</h6>
+                        <ul class="list-unstyled" id="itensAcompanhamento">
+                            <li class="d-flex justify-content-between border-bottom py-2">
+                                <span>Bife à Casa</span>
+                                <span>1 x Kz 2.500,00</span>
+                            </li>
+                            <li class="d-flex justify-content-between border-bottom py-2">
+                                <span>Refrigerante</span>
+                                <span>2 x Kz 300,00</span>
+                            </li>
+                        </ul>
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total:</span>
+                            <span style="color: var(--dourado);">Kz 3.100,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/main.js"></script>
+</body>
+</html>
