@@ -12,3 +12,4 @@
 # Ficheiros de sistema/editor
 .DS_Store
 Thumbs.db
+.claude/
