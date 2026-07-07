@@ -1,3 +1,42 @@
+<?php
+require_once __DIR__ . '/../../inicializar.php';
+
+// O menu tem 4 filtros fixos no ecra (entradas, principais, bebidas,
+// sobremesas). As categorias na base de dados tem nomes mais completos
+// ("Pratos Principais"), entao aqui fazemos so a correspondencia entre
+// o nome da categoria e o filtro que os botoes usam.
+function categoriaParaFiltro(string $nomeCategoria): string
+{
+    $nome = mb_strtolower($nomeCategoria, 'UTF-8');
+
+    if (str_contains($nome, 'entrada')) {
+        return 'entradas';
+    }
+    if (str_contains($nome, 'principa')) {
+        return 'principais';
+    }
+    if (str_contains($nome, 'bebida')) {
+        return 'bebidas';
+    }
+    if (str_contains($nome, 'sobremesa')) {
+        return 'sobremesas';
+    }
+
+    return 'outros';
+}
+
+$produtoModel = new ProdutoModel();
+$produtosMenu = array_map(
+    fn (array $p) => [
+        'id' => (int) $p['id'],
+        'nome' => $p['nome'],
+        'categoria' => categoriaParaFiltro($p['categoria_nome']),
+        'preco' => (float) $p['preco'],
+        'descricao' => $p['descricao'],
+    ],
+    $produtoModel->disponiveis()
+);
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -43,11 +82,11 @@
 
             <!-- Filtros -->
             <div class="d-flex flex-wrap justify-content-center gap-2 mb-5">
-                <button class="btn btn-outline-primary active" onclick="filtrarMenu('todos')">Todos</button>
-                <button class="btn btn-outline-primary" onclick="filtrarMenu('entradas')">Entradas</button>
-                <button class="btn btn-outline-primary" onclick="filtrarMenu('principais')">Pratos Principais</button>
-                <button class="btn btn-outline-primary" onclick="filtrarMenu('bebidas')">Bebidas</button>
-                <button class="btn btn-outline-primary" onclick="filtrarMenu('sobremesas')">Sobremesas</button>
+                <button class="btn btn-outline-primary active" onclick="filtrarMenu('todos', this)">Todos</button>
+                <button class="btn btn-outline-primary" onclick="filtrarMenu('entradas', this)">Entradas</button>
+                <button class="btn btn-outline-primary" onclick="filtrarMenu('principais', this)">Pratos Principais</button>
+                <button class="btn btn-outline-primary" onclick="filtrarMenu('bebidas', this)">Bebidas</button>
+                <button class="btn btn-outline-primary" onclick="filtrarMenu('sobremesas', this)">Sobremesas</button>
             </div>
 
             <!-- Lista de Produtos -->
@@ -66,5 +105,10 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/main.js"></script>
+    <script>
+        // Substitui os dados de exemplo do main.js pelos produtos reais
+        // vindos da base de dados (so os que estao "Disponivel").
+        menuData = <?= json_encode($produtosMenu, JSON_UNESCAPED_UNICODE) ?>;
+    </script>
 </body>
 </html>

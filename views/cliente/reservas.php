@@ -1,3 +1,10 @@
+<?php
+require_once __DIR__ . '/../../inicializar.php';
+
+$mesaModel = new MesaModel();
+$mesas = $mesaModel->todos();
+$flash = Sessao::consumirFlash();
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -44,46 +51,52 @@
                         </h2>
                         <p class="text-center text-muted">Preencha os dados abaixo para garantir a sua mesa</p>
 
-                        <form onsubmit="return fazerReserva(event)">
+                        <?php if ($flash): ?>
+                            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                                <?= htmlspecialchars($flash['mensagem']) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <form method="post" action="/index.php?rota=reservas.criar">
+                            <?= Csrf::campo() ?>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Nome Completo</label>
-                                    <input type="text" class="form-control" id="nomeReserva" placeholder="Seu nome" required>
+                                    <input type="text" name="nome" class="form-control" id="nomeReserva" placeholder="Seu nome" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Telefone</label>
-                                    <input type="tel" class="form-control" id="telefoneReserva" placeholder="+244 900 000 000" required>
+                                    <input type="tel" name="telefone" class="form-control" id="telefoneReserva" placeholder="+244 900 000 000" required>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Data</label>
-                                    <input type="date" class="form-control" id="dataReserva" required>
+                                    <input type="date" name="data" class="form-control" id="dataReserva" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Hora</label>
-                                    <input type="time" class="form-control" id="horaReserva" required>
+                                    <input type="time" name="hora" class="form-control" id="horaReserva" required>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Número de Pessoas</label>
-                                    <input type="number" class="form-control" id="pessoasReserva" placeholder="2" min="1" required>
+                                    <input type="number" name="pessoas" class="form-control" id="pessoasReserva" placeholder="2" min="1" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">Ocasião</label>
-                                    <select class="form-select" id="ocasiaoReserva">
-                                        <option value="Jantar">Jantar</option>
-                                        <option value="Almoço">Almoço</option>
-                                        <option value="Aniversário">Aniversário</option>
-                                        <option value="Encontro">Encontro</option>
-                                        <option value="Outro">Outro</option>
+                                    <label class="form-label fw-semibold">Mesa</label>
+                                    <select class="form-select" name="mesa_id" required>
+                                        <option value="">Seleciona a mesa</option>
+                                        <?php foreach ($mesas as $m): ?>
+                                            <option value="<?= $m['id'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Observações</label>
-                                <textarea class="form-control" id="obsReserva" rows="3" placeholder="Alguma preferência especial?"></textarea>
+                                <textarea class="form-control" name="observacoes" id="obsReserva" rows="3" placeholder="Alguma preferência especial?"></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary w-100 py-2">
                                 <i class="fas fa-check me-2"></i> Confirmar Reserva

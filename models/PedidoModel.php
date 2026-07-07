@@ -68,6 +68,35 @@ class PedidoModel extends Model
         return $pedidos;
     }
 
+    // Usado na tela de acompanhamento do cliente: um pedido so, com
+    // o numero da mesa e os itens, para mostrar o estado real.
+    public function buscarComItens(int $id): array|false
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT p.*, m.numero AS mesa_numero
+             FROM pedidos p
+             JOIN mesas m ON m.id = p.mesa_id
+             WHERE p.id = ?'
+        );
+        $stmt->execute([$id]);
+        $pedido = $stmt->fetch();
+
+        if (!$pedido) {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT ip.*, pr.nome AS produto_nome
+             FROM itens_pedido ip
+             JOIN produtos pr ON pr.id = ip.produto_id
+             WHERE ip.pedido_id = ?'
+        );
+        $stmt->execute([$id]);
+        $pedido['itens'] = $stmt->fetchAll();
+
+        return $pedido;
+    }
+
     // Grava o pedido e os seus itens numa unica transacao: ou fica
     // tudo gravado, ou nada fica (se um item falhar a meio, o
     // pedido nao fica gravado sozinho e sem itens).

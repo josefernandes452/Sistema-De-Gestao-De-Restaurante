@@ -3,16 +3,19 @@
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
 require_once __DIR__ . '/../models/LogModel.php';
+require_once __DIR__ . '/../models/ClienteModel.php';
 
 class AuthController extends Controller
 {
     private UsuarioModel $usuarioModel;
     private LogModel $logModel;
+    private ClienteModel $clienteModel;
 
     public function __construct()
     {
         $this->usuarioModel = new UsuarioModel();
         $this->logModel = new LogModel();
+        $this->clienteModel = new ClienteModel();
     }
 
     public function login(): void
@@ -49,6 +52,10 @@ class AuthController extends Controller
         Sessao::logar($utilizador);
         $this->logModel->registar($utilizador['id'], 'Login', null);
 
+        if (!empty($_POST['lembrar'])) {
+            LembrarMe::criar((int) $utilizador['id']);
+        }
+
         if (in_array($utilizador['perfil_nome'], ['Administrador', 'Operador'], true)) {
             $this->redirecionar('/views/admin/dashboard.php');
         }
@@ -77,7 +84,7 @@ class AuthController extends Controller
             $this->redirecionar('/views/cliente/registo.php');
         }
 
-        $this->usuarioModel->inserir([
+        $utilizadorId = $this->usuarioModel->inserir([
             'perfil_id' => $this->usuarioModel->idDoPerfilCliente(),
             'nome' => $nome,
             'email' => $email,
@@ -85,6 +92,12 @@ class AuthController extends Controller
             'telefone' => $telefone,
             'estado' => 'Ativo',
         ]);
+
+        // Toda conta de Cliente precisa de uma linha correspondente em
+        // "clientes", que e a tabela usada nos pedidos. Sem isto o
+        // cliente conseguia entrar no site mas nunca teria como fazer
+        // um pedido de verdade.
+        $this->clienteModel->criarOuLigarAUtilizador($utilizadorId, $nome, $email, $telefone);
 
         Sessao::flash('sucesso', 'Conta criada com sucesso. Agora e so entrar.');
         $this->redirecionar('/views/cliente/login.php');
@@ -154,6 +167,8 @@ class AuthController extends Controller
 
     public function logout(): void
     {
+        $utilizador = Sessao::utilizadorAtual();
+        LembrarMe::esquecer($utilizador['id'] ?? null);
         Sessao::sair();
         $this->redirecionar('/views/cliente/login.php');
     }

@@ -1,6 +1,23 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Cliente");
+
+$produtoModel = new ProdutoModel();
+$mesaModel = new MesaModel();
+
+$produtosMenu = array_map(
+    fn (array $p) => [
+        'id' => (int) $p['id'],
+        'nome' => $p['nome'],
+        'categoria' => 'todos',
+        'preco' => (float) $p['preco'],
+        'descricao' => $p['descricao'],
+    ],
+    $produtoModel->disponiveis()
+);
+
+$mesasLivres = $mesaModel->livres();
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -45,38 +62,73 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
             </h2>
             <p class="text-center text-muted mb-4">Escolha os itens e faça o seu pedido</p>
 
-            <div class="row">
-                <!-- Lista de Produtos -->
-                <div class="col-lg-8">
-                    <div class="row g-3" id="listaPedidos">
-                        <!-- Itens via JavaScript -->
+            <?php if ($flash): ?>
+                <div class="row justify-content-center mb-3">
+                    <div class="col-lg-8">
+                        <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                            <?= htmlspecialchars($flash['mensagem']) ?>
+                        </div>
                     </div>
                 </div>
+            <?php endif; ?>
 
-                <!-- Carrinho -->
-                <div class="col-lg-4">
-                    <div class="card shadow-lg border-0 rounded-4 p-3 sticky-top" style="top: 100px;">
-                        <h5 class="fw-bold" style="color: var(--verde-escuro);">
-                            <i class="fas fa-shopping-cart" style="color: var(--dourado);"></i> Meu Pedido
-                        </h5>
-                        <div id="carrinhoItems" class="mb-3">
-                            <p class="text-muted text-center">Seu carrinho está vazio</p>
+            <form id="formPedidoCliente" method="post" action="/index.php?rota=pedidos.criar-cliente">
+                <?= Csrf::campo() ?>
+                <div id="itensPedidoClienteEscondidos"></div>
+
+                <div class="row">
+                    <!-- Lista de Produtos -->
+                    <div class="col-lg-8">
+                        <div class="row g-3" id="listaPedidos">
+                            <!-- Itens via JavaScript -->
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between fw-bold">
-                            <span>Total:</span>
-                            <span id="totalPedido" style="color: var(--dourado);">Kz 0,00</span>
+                    </div>
+
+                    <!-- Carrinho -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-lg border-0 rounded-4 p-3 sticky-top" style="top: 100px;">
+                            <h5 class="fw-bold" style="color: var(--verde-escuro);">
+                                <i class="fas fa-shopping-cart" style="color: var(--dourado);"></i> Meu Pedido
+                            </h5>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small">A tua mesa</label>
+                                <?php if (empty($mesasLivres)): ?>
+                                    <p class="text-danger small mb-0">Sem mesas livres neste momento. Tenta novamente daqui a pouco.</p>
+                                <?php else: ?>
+                                    <select class="form-select" name="mesa_id" required>
+                                        <option value="">Seleciona a tua mesa</option>
+                                        <?php foreach ($mesasLivres as $m): ?>
+                                            <option value="<?= $m['id'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                <?php endif; ?>
+                            </div>
+
+                            <div id="carrinhoItems" class="mb-3">
+                                <p class="text-muted text-center">Seu carrinho está vazio</p>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Total:</span>
+                                <span id="totalPedido" style="color: var(--dourado);">Kz 0,00</span>
+                            </div>
+                            <button type="button" class="btn btn-primary w-100 mt-3" onclick="finalizarPedido()" <?= empty($mesasLivres) ? 'disabled' : '' ?>>
+                                <i class="fas fa-check me-2"></i> Finalizar Pedido
+                            </button>
                         </div>
-                        <button class="btn btn-primary w-100 mt-3" onclick="finalizarPedido()">
-                            <i class="fas fa-check me-2"></i> Finalizar Pedido
-                        </button>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/main.js"></script>
+    <script>
+        // Mesmo esquema do menu.php: troca os dados de exemplo pelos
+        // produtos reais da base de dados.
+        menuData = <?= json_encode($produtosMenu, JSON_UNESCAPED_UNICODE) ?>;
+    </script>
 </body>
 </html>

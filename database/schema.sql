@@ -27,6 +27,9 @@ CREATE TABLE utilizadores (
     estado ENUM('Ativo', 'Inativo') NOT NULL DEFAULT 'Ativo',
     token_recuperacao VARCHAR(100),
     token_recuperacao_expira DATETIME,
+    lembrar_selector VARCHAR(20),
+    lembrar_validador_hash VARCHAR(64),
+    lembrar_expira DATETIME,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (perfil_id) REFERENCES perfis(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
@@ -74,12 +77,14 @@ CREATE TABLE mesas (
 -- ---------------------------------------------------------------
 CREATE TABLE clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    utilizador_id INT UNIQUE,
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(150),
     telefone VARCHAR(20) NOT NULL,
     nif VARCHAR(20),
     endereco VARCHAR(255),
-    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------

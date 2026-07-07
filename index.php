@@ -79,12 +79,40 @@ switch ($rota) {
         (new PedidoController())->eliminar();
         break;
 
+    case 'pedidos.criar-cliente':
+        (new PedidoController())->criarComoCliente();
+        break;
+
+    case 'pedidos.estado-json':
+        (new PedidoController())->estadoJson();
+        break;
+
     case 'pagamentos.guardar':
         (new PagamentoController())->guardar();
         break;
 
     case 'pagamentos.eliminar':
         (new PagamentoController())->eliminar();
+        break;
+
+    case 'relatorios.csv':
+        (new RelatorioController())->exportarCsv();
+        break;
+
+    case 'relatorios.pdf':
+        (new RelatorioController())->exportarPdf();
+        break;
+
+    case 'reservas.criar':
+        (new ReservaController())->criar();
+        break;
+
+    case 'reservas.estado':
+        (new ReservaController())->atualizarEstado();
+        break;
+
+    case 'reservas.eliminar':
+        (new ReservaController())->eliminar();
         break;
 
     default:

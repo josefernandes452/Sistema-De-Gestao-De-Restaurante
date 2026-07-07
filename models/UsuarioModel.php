@@ -74,6 +74,42 @@ class UsuarioModel extends Model
         return $stmt->fetch();
     }
 
+    // Traz o utilizador pelo selector do cookie "lembrar-me". So devolve
+    // se ainda estiver dentro do prazo, o resto da validacao (o validador
+    // em si) fica a cargo da classe LembrarMe.
+    public function buscarPorSelectorLembrarMe(string $selector): array|false
+    {
+        $sql = 'SELECT u.*, p.nome AS perfil_nome
+                FROM utilizadores u
+                JOIN perfis p ON p.id = u.perfil_id
+                WHERE u.lembrar_selector = ?
+                AND u.lembrar_expira > NOW()';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$selector]);
+
+        return $stmt->fetch();
+    }
+
+    public function definirLembrarMe(int $id, string $selector, string $validadorHash): bool
+    {
+        return $this->atualizar($id, [
+            'lembrar_selector' => $selector,
+            'lembrar_validador_hash' => $validadorHash,
+            // 30 dias de validade para o login automatico.
+            'lembrar_expira' => date('Y-m-d H:i:s', time() + 30 * 24 * 3600),
+        ]);
+    }
+
+    public function limparLembrarMe(int $id): bool
+    {
+        return $this->atualizar($id, [
+            'lembrar_selector' => null,
+            'lembrar_validador_hash' => null,
+            'lembrar_expira' => null,
+        ]);
+    }
+
     // Lista para a tela de gestao de utilizadores, ja com o nome do perfil.
     public function todosComPerfil(): array
     {

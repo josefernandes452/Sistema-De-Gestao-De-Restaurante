@@ -1,6 +1,32 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Cliente");
+
+$clienteModel = new ClienteModel();
+$pedidoModel = new PedidoModel();
+
+$cliente = $clienteModel->buscarPorUtilizadorId($utilizadorLogado['id']);
+$id = Validador::inteiro($_GET['id'] ?? '');
+$pedido = $id ? $pedidoModel->buscarComItens($id) : false;
+
+// So mostra o pedido se ele for mesmo do cliente logado. Sem isto,
+// bastava mudar o numero na URL para veres o pedido de outra pessoa.
+if (!$pedido || !$cliente || (int) $pedido['cliente_id'] !== (int) $cliente['id']) {
+    Sessao::flash('erro', 'Nao encontramos esse pedido.');
+    header('Location: /views/cliente/pedidos.php');
+    exit;
+}
+
+// Os passos visiveis no ecra sao so 4 (Recebido, Preparando, Pronto,
+// Entregue). "Cancelado" nao entra nessa barra, mostra um aviso a parte.
+$mapaPasso = ['Pendente' => 0, 'Em Preparacao' => 1, 'Pronto' => 2, 'Entregue' => 3];
+$passoAtual = $mapaPasso[$pedido['estado']] ?? null;
+$rotulos = ['Recebido', 'Preparando', 'Pronto', 'Entregue'];
+
+$total = 0;
+foreach ($pedido['itens'] as $item) {
+    $total += (float) $item['subtotal'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -8,7 +34,7 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acompanhamento - Sabor Alma</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../assets/css/style.css">
@@ -47,73 +73,63 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
 
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <div class="card shadow-lg border-0 rounded-4 p-4">
+                    <div class="card shadow-lg border-0 rounded-4 p-4" id="cardPedido" data-pedido-id="<?= $pedido['id'] ?>" data-estado="<?= htmlspecialchars($pedido['estado']) ?>">
                         <div class="text-center mb-4">
-                            <h4 class="fw-bold">Pedido #<span id="numeroPedido">123</span></h4>
-                            <p class="text-muted">Atualizado em tempo real</p>
+                            <h4 class="fw-bold">Pedido #<?= $pedido['id'] ?> &middot; Mesa <?= $pedido['mesa_numero'] ?></h4>
+                            <p class="text-muted">Atualiza sozinho a cada poucos segundos</p>
                         </div>
 
-                        <!-- Status -->
-                        <div class="position-relative">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div class="text-center">
-                                    <div class="rounded-circle bg-success p-3" style="width: 60px; height: 60px; margin: 0 auto;">
-                                        <i class="fas fa-check text-white fs-4"></i>
-                                    </div>
-                                    <small class="d-block mt-2 fw-bold text-success">Recebido</small>
-                                </div>
-                                <div class="flex-grow-1 mx-2">
-                                    <div class="progress" style="height: 4px;">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%;"></div>
-                                    </div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="rounded-circle bg-success p-3" style="width: 60px; height: 60px; margin: 0 auto;">
-                                        <i class="fas fa-check text-white fs-4"></i>
-                                    </div>
-                                    <small class="d-block mt-2 fw-bold text-success">Preparando</small>
-                                </div>
-                                <div class="flex-grow-1 mx-2">
-                                    <div class="progress" style="height: 4px;">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 50%;"></div>
-                                    </div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="rounded-circle bg-secondary p-3" style="width: 60px; height: 60px; margin: 0 auto;">
-                                        <i class="fas fa-hourglass-half text-white fs-4"></i>
-                                    </div>
-                                    <small class="d-block mt-2 text-muted">Pronto</small>
-                                </div>
-                                <div class="flex-grow-1 mx-2">
-                                    <div class="progress" style="height: 4px;">
-                                        <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%;"></div>
-                                    </div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="rounded-circle bg-secondary p-3" style="width: 60px; height: 60px; margin: 0 auto;">
-                                        <i class="fas fa-clock text-white fs-4"></i>
-                                    </div>
-                                    <small class="d-block mt-2 text-muted">Entregue</small>
+                        <?php if ($pedido['estado'] === 'Cancelado'): ?>
+                            <div class="alert alert-danger text-center">
+                                <i class="fas fa-times-circle me-2"></i> Este pedido foi cancelado.
+                            </div>
+                        <?php else: ?>
+                            <!-- Status -->
+                            <div class="position-relative">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <?php foreach ($rotulos as $i => $rotulo): ?>
+                                        <?php
+                                            $concluido = $i <= $passoAtual;
+                                            $proximo = $i === $passoAtual + 1;
+                                            $corCirculo = $concluido ? 'bg-success' : 'bg-secondary';
+                                            $icone = $concluido ? 'fa-check' : ($proximo ? 'fa-hourglass-half' : 'fa-clock');
+                                        ?>
+                                        <div class="text-center">
+                                            <div class="rounded-circle <?= $corCirculo ?> p-3" style="width: 60px; height: 60px; margin: 0 auto;">
+                                                <i class="fas <?= $icone ?> text-white fs-4"></i>
+                                            </div>
+                                            <small class="d-block mt-2 fw-bold <?= $concluido ? 'text-success' : 'text-muted' ?>"><?= $rotulo ?></small>
+                                        </div>
+                                        <?php if ($i < count($rotulos) - 1): ?>
+                                            <?php
+                                                $largura = $i < $passoAtual ? '100' : ($i === $passoAtual ? '50' : '0');
+                                                $corBarra = $i < $passoAtual ? 'bg-success' : ($i === $passoAtual ? 'bg-warning' : 'bg-secondary');
+                                            ?>
+                                            <div class="flex-grow-1 mx-2">
+                                                <div class="progress" style="height: 4px;">
+                                                    <div class="progress-bar <?= $corBarra ?>" role="progressbar" style="width: <?= $largura ?>%;"></div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
-                        </div>
+                        <?php endif; ?>
 
                         <!-- Itens do Pedido -->
                         <hr>
                         <h6 class="fw-bold">Itens do Pedido</h6>
-                        <ul class="list-unstyled" id="itensAcompanhamento">
-                            <li class="d-flex justify-content-between border-bottom py-2">
-                                <span>Bife à Casa</span>
-                                <span>1 x Kz 2.500,00</span>
-                            </li>
-                            <li class="d-flex justify-content-between border-bottom py-2">
-                                <span>Refrigerante</span>
-                                <span>2 x Kz 300,00</span>
-                            </li>
+                        <ul class="list-unstyled">
+                            <?php foreach ($pedido['itens'] as $item): ?>
+                                <li class="d-flex justify-content-between border-bottom py-2">
+                                    <span><?= htmlspecialchars($item['produto_nome']) ?></span>
+                                    <span><?= (int) $item['quantidade'] ?> x Kz <?= number_format((float) $item['preco_unitario'], 2) ?></span>
+                                </li>
+                            <?php endforeach; ?>
                         </ul>
                         <div class="d-flex justify-content-between fw-bold">
                             <span>Total:</span>
-                            <span style="color: var(--dourado);">Kz 3.100,00</span>
+                            <span style="color: var(--dourado);">Kz <?= number_format($total, 2) ?></span>
                         </div>
                     </div>
                 </div>
@@ -123,5 +139,27 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/main.js"></script>
+    <script>
+        // Verifica de tempos a tempos se o estado do pedido mudou na
+        // base de dados. Se mudou, recarrega a pagina para mostrar o
+        // passo novo, em vez de o cliente ter de andar a atualizar
+        // manualmente.
+        (function () {
+            var card = document.getElementById('cardPedido');
+            var pedidoId = card.dataset.pedidoId;
+            var estadoAtual = card.dataset.estado;
+
+            setInterval(function () {
+                fetch('/index.php?rota=pedidos.estado-json&id=' + pedidoId)
+                    .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+                    .then(function (dados) {
+                        if (dados && dados.estado && dados.estado !== estadoAtual) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(function () { /* tenta outra vez na proxima ronda */ });
+            }, 8000);
+        })();
+    </script>
 </body>
 </html>

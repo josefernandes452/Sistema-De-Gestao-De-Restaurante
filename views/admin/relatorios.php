@@ -39,6 +39,7 @@ $totalVendidoPeriodo = array_sum(array_column($vendasPorPeriodo, 'total_vendido'
             <a href="mesas.php" class="menu-item"><i class="fas fa-chair"></i> Mesas</a>
             <a href="clientes.php" class="menu-item"><i class="fas fa-user-friends"></i> Clientes</a>
             <a href="pedidos.php" class="menu-item"><i class="fas fa-clipboard-list"></i> Pedidos</a>
+            <a href="reservas.php" class="menu-item"><i class="fas fa-calendar-check"></i> Reservas</a>
             <a href="pagamentos.php" class="menu-item"><i class="fas fa-credit-card"></i> Pagamentos</a>
             <a href="relatorios.php" class="menu-item active"><i class="fas fa-chart-bar"></i> Relatorios</a>
         </nav>
@@ -89,6 +90,14 @@ $totalVendidoPeriodo = array_sum(array_column($vendasPorPeriodo, 'total_vendido'
                     </button>
                 </div>
             </form>
+            <div class="d-flex gap-2 mt-3">
+                <a class="btn btn-outline-secondary btn-sm" href="/index.php?rota=relatorios.csv&data_inicio=<?= urlencode($dataInicio) ?>&data_fim=<?= urlencode($dataFim) ?>">
+                    <i class="fas fa-file-csv me-1"></i> Descarregar CSV
+                </a>
+                <a class="btn btn-outline-secondary btn-sm" href="/index.php?rota=relatorios.pdf&data_inicio=<?= urlencode($dataInicio) ?>&data_fim=<?= urlencode($dataFim) ?>">
+                    <i class="fas fa-file-pdf me-1"></i> Descarregar PDF
+                </a>
+            </div>
         </div>
 
         <!-- CARDS RESUMO -->

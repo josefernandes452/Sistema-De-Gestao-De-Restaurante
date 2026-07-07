@@ -11,6 +11,16 @@ class MesaModel extends Model
         return $this->pdo->query('SELECT * FROM mesas ORDER BY numero')->fetchAll();
     }
 
+    // Mesas que um cliente pode escolher ao fazer um pedido pelo site,
+    // so as que estao livres neste momento.
+    public function livres(): array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM mesas WHERE estado = 'Livre' ORDER BY numero");
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
     public function numeroEmUso(int $numero, ?int $ignorarId = null): bool
     {
         $sql = 'SELECT id FROM mesas WHERE numero = ?';

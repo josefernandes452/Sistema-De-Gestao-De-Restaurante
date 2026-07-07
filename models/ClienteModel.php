@@ -19,4 +19,43 @@ class ClienteModel extends Model
 
         return $this->pdo->query($sql)->fetchAll();
     }
+
+    public function buscarPorUtilizadorId(int $utilizadorId): array|false
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM clientes WHERE utilizador_id = ?');
+        $stmt->execute([$utilizadorId]);
+
+        return $stmt->fetch();
+    }
+
+    public function buscarPorEmail(string $email): array|false
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM clientes WHERE email = ?');
+        $stmt->execute([$email]);
+
+        return $stmt->fetch();
+    }
+
+    // Chamado quando um Cliente cria conta em registo.php. Se ja
+    // existir uma linha em clientes com o mesmo email (por exemplo,
+    // porque um operador ja tinha registado esse cliente manualmente
+    // num pedido antigo), liga essa linha a conta nova em vez de
+    // duplicar. Caso contrario cria uma linha nova ja ligada.
+    public function criarOuLigarAUtilizador(int $utilizadorId, string $nome, string $email, string $telefone): int
+    {
+        $existente = $this->buscarPorEmail($email);
+
+        if ($existente) {
+            $this->atualizar((int) $existente['id'], ['utilizador_id' => $utilizadorId]);
+
+            return (int) $existente['id'];
+        }
+
+        return $this->inserir([
+            'utilizador_id' => $utilizadorId,
+            'nome' => $nome,
+            'email' => $email,
+            'telefone' => $telefone,
+        ]);
+    }
 }

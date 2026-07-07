@@ -16,6 +16,22 @@ class ProdutoModel extends Model
         return $this->pdo->query($sql)->fetchAll();
     }
 
+    // So os produtos que o cliente pode mesmo pedir, para usar no
+    // cardapio publico (views/cliente/menu.php).
+    public function disponiveis(): array
+    {
+        $sql = 'SELECT p.*, c.nome AS categoria_nome
+                FROM produtos p
+                JOIN categorias c ON c.id = p.categoria_id
+                WHERE p.estado = ?
+                ORDER BY c.nome, p.nome';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['Disponivel']);
+
+        return $stmt->fetchAll();
+    }
+
     // Pesquisa por nome, codigo (o id do produto) e categoria, cada
     // filtro so entra na consulta se vier preenchido.
     public function pesquisar(?string $nome, ?int $codigo, ?int $categoriaId): array

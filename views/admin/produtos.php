@@ -42,6 +42,7 @@ $lista = $emPesquisa
             <a href="mesas.php" class="menu-item"><i class="fas fa-chair"></i> Mesas</a>
             <a href="clientes.php" class="menu-item"><i class="fas fa-user-friends"></i> Clientes</a>
             <a href="pedidos.php" class="menu-item"><i class="fas fa-clipboard-list"></i> Pedidos</a>
+            <a href="reservas.php" class="menu-item"><i class="fas fa-calendar-check"></i> Reservas</a>
             <a href="pagamentos.php" class="menu-item"><i class="fas fa-credit-card"></i> Pagamentos</a>
             <a href="relatorios.php" class="menu-item"><i class="fas fa-chart-bar"></i> Relatorios</a>
         </nav>

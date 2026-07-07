@@ -137,7 +137,7 @@ function atualizarCarrinho() {
         var subtotal = item.preco * item.quantidade;
         total += subtotal;
         html += '<div class="d-flex justify-content-between border-bottom py-2">';
-        html += '<div><span class="fw-semibold">' + item.nome + '</span>';
+        html += '<div><span class="fw-semibold">' + escaparHtml(item.nome) + '</span>';
         html += '<small class="d-block text-muted">' + item.quantidade + ' x Kz ' + item.preco.toFixed(2) + '</small></div>';
         html += '<div><span class="fw-bold" style="color: #c9a84c;">Kz ' + subtotal.toFixed(2) + '</span>';
         html += '<button class="btn btn-sm btn-outline-danger ms-2" onclick="removerDoCarrinho(' + item.id + ')"><i class="fas fa-times"></i></button></div>';
@@ -148,28 +148,73 @@ function atualizarCarrinho() {
     if (totalEl) totalEl.textContent = 'Kz ' + total.toFixed(2);
 }
 
+// Envia o carrinho a serio para o servidor (formPedidoCliente, em
+// pedidos.php), em vez de so simular com um alert. Os itens vao como
+// campos escondidos produto_id[]/quantidade[], o mesmo esquema que o
+// painel do operador ja usava.
 function finalizarPedido() {
     if (carrinho.length === 0) {
         alert('Seu carrinho esta vazio!');
         return;
     }
-    
+
+    var form = document.getElementById('formPedidoCliente');
+    if (!form) return;
+
+    var mesaSelect = form.querySelector('select[name="mesa_id"]');
+    if (!mesaSelect || !mesaSelect.value) {
+        alert('Escolhe a tua mesa antes de finalizar o pedido.');
+        return;
+    }
+
     var total = 0;
     for (var i = 0; i < carrinho.length; i++) {
         total += carrinho[i].preco * carrinho[i].quantidade;
     }
-    
-    if (confirm('Confirmar pedido no valor total de Kz ' + total.toFixed(2) + '?')) {
-        alert('Pedido realizado com sucesso!');
-        carrinho = [];
-        atualizarCarrinho();
-        window.location.href = 'acompanhamento.php';
+
+    if (!confirm('Confirmar pedido no valor total de Kz ' + total.toFixed(2) + '?')) {
+        return;
     }
+
+    var escondidos = document.getElementById('itensPedidoClienteEscondidos');
+    escondidos.innerHTML = '';
+    for (var i = 0; i < carrinho.length; i++) {
+        escondidos.innerHTML +=
+            '<input type="hidden" name="produto_id[]" value="' + carrinho[i].id + '">' +
+            '<input type="hidden" name="quantidade[]" value="' + carrinho[i].quantidade + '">';
+    }
+
+    form.requestSubmit();
 }
 
 // ============================================
 // RENDERIZAR MENU
 // ============================================
+
+// O nome e a descricao dos produtos agora vem da base de dados
+// (menu.php ja injeta os dados reais). Escapamos antes de meter no
+// innerHTML para nao correr o risco de um produto com um nome
+// malicioso injetar HTML/JS na pagina.
+function escaparHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+}
+
+// Chamada pelos botoes de filtro do cardapio. Alem de filtrar,
+// marca visualmente qual o botao ativo.
+function filtrarMenu(filtro, botao) {
+    renderizarMenu('listaMenu', filtro);
+
+    if (botao) {
+        var botoes = botao.parentElement.querySelectorAll('.btn');
+        for (var i = 0; i < botoes.length; i++) {
+            botoes[i].classList.remove('active');
+        }
+        botao.classList.add('active');
+    }
+}
+
 function renderizarMenu(containerId, filtro) {
     var container = document.getElementById(containerId);
     if (!container) return;
@@ -199,8 +244,8 @@ function renderizarMenu(containerId, filtro) {
                     '<div style="width: 70px; height: 70px; background: #f5f0e8; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #c9a84c;">' +
                         '<i class="fas fa-utensils"></i>' +
                     '</div>' +
-                    '<h6 class="fw-bold mt-3">' + produto.nome + '</h6>' +
-                    '<p class="text-muted small">' + produto.descricao + '</p>' +
+                    '<h6 class="fw-bold mt-3">' + escaparHtml(produto.nome) + '</h6>' +
+                    '<p class="text-muted small">' + escaparHtml(produto.descricao) + '</p>' +
                     '<p class="fw-bold" style="color: #c9a84c;">Kz ' + produto.preco.toFixed(2) + '</p>' +
                     '<button class="btn btn-sm w-100" style="background: #c9a84c; color: #1a3c2a;" onclick="adicionarAoCarrinho(' + produto.id + ')">' +
                         '<i class="fas fa-plus me-1"></i> Adicionar' +
@@ -212,95 +257,24 @@ function renderizarMenu(containerId, filtro) {
 }
 
 // ============================================
-// RESERVAS
-// ============================================
-function fazerReserva(event) {
-    event.preventDefault();
-    
-    var nome = document.getElementById('nomeReserva').value.trim();
-    var telefone = document.getElementById('telefoneReserva').value.trim();
-    var data = document.getElementById('dataReserva').value;
-    var hora = document.getElementById('horaReserva').value;
-    var pessoas = document.getElementById('pessoasReserva').value;
-    
-    if (!nome || !telefone || !data || !hora || !pessoas) {
-        alert('Preencha todos os campos obrigatorios!');
-        return false;
-    }
-    
-    alert('Reserva confirmada!\nNome: ' + nome + '\nData: ' + data + ' ' + hora + '\nPessoas: ' + pessoas);
-    return false;
-}
-
-// ============================================
-// ACOMPANHAMENTO
-// ============================================
-var statusPedido = 0;
-var statusLista = ['Recebido', 'Preparando', 'Pronto', 'Entregue'];
-
-function atualizarStatus() {
-    var steps = document.querySelectorAll('.step-status');
-    var progressBar = document.querySelector('.progress-bar');
-    
-    if (!steps.length) return;
-    
-    for (var i = 0; i < steps.length; i++) {
-        var icon = steps[i].querySelector('i');
-        if (i <= statusPedido) {
-            steps[i].classList.remove('text-muted');
-            steps[i].classList.add('text-success');
-            if (icon) icon.className = 'fas fa-check-circle fs-3';
-        } else {
-            steps[i].classList.remove('text-success');
-            steps[i].classList.add('text-muted');
-            if (icon) icon.className = 'fas fa-circle fs-3';
-        }
-    }
-    
-    if (progressBar) {
-        var progress = ((statusPedido + 1) / statusLista.length) * 100;
-        progressBar.style.width = progress + '%';
-    }
-}
-
-function iniciarAcompanhamento() {
-    statusPedido = 0;
-    atualizarStatus();
-    
-    if (window.intervalStatus) clearInterval(window.intervalStatus);
-    window.intervalStatus = setInterval(function() {
-        if (statusPedido < statusLista.length - 1) {
-            statusPedido++;
-            atualizarStatus();
-        } else {
-            clearInterval(window.intervalStatus);
-        }
-    }, 5000);
-}
-
-// ============================================
 // INICIALIZACAO
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     var path = window.location.pathname;
     var page = path.split('/').pop();
-    
+
     // Verificar login
     verificarLogin();
-    
+
     if (page === 'menu.php') {
         renderizarMenu('listaMenu', 'todos');
     }
-    
+
     if (page === 'pedidos.php') {
         renderizarMenu('listaPedidos', 'todos');
         atualizarCarrinho();
     }
-    
-    if (page === 'acompanhamento.php') {
-        iniciarAcompanhamento();
-    }
-    
+
     if (page === 'perfil-cliente.php') {
         carregarPerfil();
     }

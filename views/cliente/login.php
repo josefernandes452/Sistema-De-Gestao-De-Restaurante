@@ -63,7 +63,7 @@ $flash = Sessao::consumirFlash();
                             </div>
                             <div class="d-flex justify-content-between mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="lembrar">
+                                    <input class="form-check-input" type="checkbox" name="lembrar" id="lembrar">
                                     <label class="form-check-label" for="lembrar">Lembrar-me</label>
                                 </div>
                                 <a href="#" class="text-decoration-none" style="color: #c9a84c;" data-bs-toggle="modal" data-bs-target="#modalRecuperar">Esqueceu a senha?</a>
