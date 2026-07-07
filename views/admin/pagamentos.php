@@ -1,6 +1,15 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$pagamentoModel = new PagamentoModel();
+$pedidoModel = new PedidoModel();
+
+$lista = $pagamentoModel->todosComDetalhes();
+$pedidos = $pedidoModel->todosComDetalhes();
+$flash = Sessao::consumirFlash();
+
+$corEstadoPagamento = ['Pago' => 'success', 'Pendente' => 'warning', 'Cancelado' => 'danger'];
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -52,13 +61,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
@@ -89,11 +104,28 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaPagamentos"></tbody>
+                    <tbody id="tabelaPagamentos">
+                        <?php foreach ($lista as $pg): ?>
+                            <tr>
+                                <td><?= $pg['id'] ?></td>
+                                <td>#<?= $pg['pedido_id'] ?></td>
+                                <td><?= htmlspecialchars($pg['cliente_nome'] ?: 'Cliente avulso') ?></td>
+                                <td><strong>Kz <?= number_format((float) $pg['valor'], 2) ?></strong></td>
+                                <td><span class="badge bg-info"><?= htmlspecialchars($pg['metodo']) ?></span></td>
+                                <td><span class="badge bg-<?= $corEstadoPagamento[$pg['estado']] ?? 'secondary' ?>"><?= htmlspecialchars($pg['estado']) ?></span></td>
+                                <td><?= htmlspecialchars($pg['criado_em']) ?></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPagamento(<?= $pg['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalPagamentos">Total: 0 pagamentos</span>
+                <span class="text-muted small" id="totalPagamentos">Total: <?= count($lista) ?> pagamentos</span>
             </div>
         </div>
 
@@ -104,29 +136,31 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <div class="modal fade" id="modalPagamento" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalPagamentoTitulo"><i class="fas fa-credit-card me-2"></i> Novo Pagamento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formPagamento">
-                        <input type="hidden" id="pagamentoId">
+                <form method="post" action="/index.php?rota=pagamentos.guardar">
+                    <?= Csrf::campo() ?>
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title"><i class="fas fa-credit-card me-2"></i> Novo Pagamento</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Pedido</label>
-                            <select class="form-select" id="pedidoPagamento" required>
+                            <select class="form-select" name="pedido_id" id="pedidoPagamento" required onchange="preencherValorPagamento(this)">
                                 <option value="">Selecione</option>
-                                <option value="#123">#123 - Joao Silva</option>
-                                <option value="#122">#122 - Maria Santos</option>
-                                <option value="#121">#121 - Pedro Costa</option>
+                                <?php foreach ($pedidos as $p): ?>
+                                    <option value="<?= $p['id'] ?>" data-total="<?= $p['total'] ?>">
+                                        #<?= $p['id'] ?> - <?= htmlspecialchars($p['cliente_nome'] ?: 'Cliente avulso') ?> (Kz <?= number_format((float) $p['total'], 2) ?>)
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Valor</label>
-                            <input type="number" class="form-control" id="valorPagamento" placeholder="0.00" step="0.01" required>
+                            <input type="number" name="valor" class="form-control" id="valorPagamento" placeholder="0.00" step="0.01" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Metodo</label>
-                            <select class="form-select" id="metodoPagamento" required>
+                            <select class="form-select" name="metodo" id="metodoPagamento" required>
                                 <option value="">Selecione</option>
                                 <option value="Dinheiro">Dinheiro</option>
                                 <option value="Cartao de Credito">Cartao de Credito</option>
@@ -137,24 +171,28 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Status</label>
-                            <select class="form-select" id="statusPagamento">
+                            <select class="form-select" name="estado" id="statusPagamento">
                                 <option value="Pendente">Pendente</option>
                                 <option value="Pago">Pago</option>
                                 <option value="Cancelado">Cancelado</option>
-                                <option value="Reembolsado">Reembolsado</option>
                             </select>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarPagamento()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarPagamento">Salvar</span>
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> Salvar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    <form id="formEliminarPagamento" method="post" action="/index.php?rota=pagamentos.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarPagamentoId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>

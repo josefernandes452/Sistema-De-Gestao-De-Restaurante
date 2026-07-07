@@ -2,14 +2,17 @@
 
 require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/UsuarioModel.php';
+require_once __DIR__ . '/../models/LogModel.php';
 
 class AuthController extends Controller
 {
     private UsuarioModel $usuarioModel;
+    private LogModel $logModel;
 
     public function __construct()
     {
         $this->usuarioModel = new UsuarioModel();
+        $this->logModel = new LogModel();
     }
 
     public function login(): void
@@ -29,6 +32,11 @@ class AuthController extends Controller
         $utilizador = $email ? $this->usuarioModel->buscarPorEmailComPerfil($email) : false;
 
         if (!$utilizador || !password_verify($senha, $utilizador['senha'])) {
+            $this->logModel->registar(
+                is_array($utilizador) ? $utilizador['id'] : null,
+                'Tentativa de login falhada',
+                "Email usado: $email"
+            );
             Sessao::flash('erro', 'Email ou senha invalidos.');
             $this->redirecionar('/views/cliente/login.php');
         }
@@ -39,6 +47,7 @@ class AuthController extends Controller
         }
 
         Sessao::logar($utilizador);
+        $this->logModel->registar($utilizador['id'], 'Login', null);
 
         if (in_array($utilizador['perfil_nome'], ['Administrador', 'Operador'], true)) {
             $this->redirecionar('/views/admin/dashboard.php');

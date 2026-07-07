@@ -4,14 +4,19 @@ require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/PedidoModel.php';
 require_once __DIR__ . '/../models/ProdutoModel.php';
 require_once __DIR__ . '/../models/MesaModel.php';
+require_once __DIR__ . '/../models/LogModel.php';
 
 class PedidoController extends Controller
 {
     private PedidoModel $pedidoModel;
     private ProdutoModel $produtoModel;
     private MesaModel $mesaModel;
+    private LogModel $logModel;
 
     private const ESTADOS_VALIDOS = ['Pendente', 'Em Preparacao', 'Pronto', 'Entregue', 'Cancelado'];
+
+    // Quando o pedido chega a um destes estados, a mesa fica livre outra vez.
+    private const ESTADOS_QUE_LIBERTAM_MESA = ['Entregue', 'Cancelado'];
 
     public function __construct()
     {
@@ -19,6 +24,7 @@ class PedidoController extends Controller
         $this->pedidoModel = new PedidoModel();
         $this->produtoModel = new ProdutoModel();
         $this->mesaModel = new MesaModel();
+        $this->logModel = new LogModel();
     }
 
     public function criar(): void
@@ -70,8 +76,14 @@ class PedidoController extends Controller
             'estado' => 'Pendente',
         ];
 
-        $this->pedidoModel->criarComItens($dadosPedido, $itens);
+        $pedidoId = $this->pedidoModel->criarComItens($dadosPedido, $itens);
         $this->mesaModel->atualizar($mesaId, ['estado' => 'Ocupada']);
+
+        $this->logModel->registar(
+            Sessao::utilizadorAtual()['id'],
+            'Criacao de pedido',
+            "Pedido #$pedidoId, mesa #$mesaId"
+        );
 
         Sessao::flash('sucesso', 'Pedido criado.');
         $this->redirecionar('/views/admin/pedidos.php');
@@ -91,7 +103,20 @@ class PedidoController extends Controller
             $this->redirecionar('/views/admin/pedidos.php');
         }
 
+        $pedido = $this->pedidoModel->buscarPorId($id);
+
         $this->pedidoModel->atualizar($id, ['estado' => $estado]);
+
+        if ($pedido && in_array($estado, self::ESTADOS_QUE_LIBERTAM_MESA, true)) {
+            $this->mesaModel->atualizar($pedido['mesa_id'], ['estado' => 'Livre']);
+        }
+
+        $this->logModel->registar(
+            Sessao::utilizadorAtual()['id'],
+            'Mudanca de estado do pedido',
+            "Pedido #$id passou para $estado"
+        );
+
         Sessao::flash('sucesso', 'Estado do pedido atualizado.');
         $this->redirecionar('/views/admin/pedidos.php');
     }
@@ -103,7 +128,20 @@ class PedidoController extends Controller
         }
 
         $id = Validador::inteiro($_POST['id'] ?? '');
+        $pedido = $this->pedidoModel->buscarPorId($id);
+
         $this->pedidoModel->eliminar($id);
+
+        if ($pedido) {
+            $this->mesaModel->atualizar($pedido['mesa_id'], ['estado' => 'Livre']);
+        }
+
+        $this->logModel->registar(
+            Sessao::utilizadorAtual()['id'],
+            'Eliminacao de pedido',
+            "Pedido #$id"
+        );
+
         Sessao::flash('sucesso', 'Pedido eliminado.');
         $this->redirecionar('/views/admin/pedidos.php');
     }

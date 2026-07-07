@@ -1,6 +1,70 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$pdo = Database::getConexao();
+
+// Cartoes do topo. Comparamos hoje com ontem para mostrar uma
+// variacao real, em vez de uma percentagem inventada.
+$pedidosHoje = (int) $pdo->query("SELECT COUNT(*) FROM pedidos WHERE DATE(criado_em) = CURDATE()")->fetchColumn();
+$pedidosOntem = (int) $pdo->query("SELECT COUNT(*) FROM pedidos WHERE DATE(criado_em) = CURDATE() - INTERVAL 1 DAY")->fetchColumn();
+$variacaoPedidos = $pedidosOntem > 0 ? round((($pedidosHoje - $pedidosOntem) / $pedidosOntem) * 100) : null;
+
+$totalClientes = (int) $pdo->query('SELECT COUNT(*) FROM clientes')->fetchColumn();
+$totalProdutos = (int) $pdo->query('SELECT COUNT(*) FROM produtos')->fetchColumn();
+
+$faturacaoHoje = (float) $pdo->query("SELECT COALESCE(SUM(valor), 0) FROM pagamentos WHERE estado = 'Pago' AND DATE(criado_em) = CURDATE()")->fetchColumn();
+$faturacaoOntem = (float) $pdo->query("SELECT COALESCE(SUM(valor), 0) FROM pagamentos WHERE estado = 'Pago' AND DATE(criado_em) = CURDATE() - INTERVAL 1 DAY")->fetchColumn();
+$variacaoFaturacao = $faturacaoOntem > 0 ? round((($faturacaoHoje - $faturacaoOntem) / $faturacaoOntem) * 100) : null;
+
+// Vendas dos ultimos 7 dias, para o grafico de barras.
+$diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
+$vendas7Dias = [];
+for ($i = 6; $i >= 0; $i--) {
+    $data = date('Y-m-d', strtotime("-$i day"));
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(valor), 0) FROM pagamentos WHERE estado = 'Pago' AND DATE(criado_em) = ?");
+    $stmt->execute([$data]);
+    $vendas7Dias[] = [
+        'label' => $diasSemana[date('N', strtotime($data)) - 1],
+        'valor' => (float) $stmt->fetchColumn(),
+    ];
+}
+$maiorVenda = max(array_column($vendas7Dias, 'valor')) ?: 1;
+
+// Ultimos pedidos, com o tempo desde que foram feitos.
+$ultimosPedidos = $pdo->query(
+    "SELECT p.id, p.estado, p.criado_em, COALESCE(c.nome, 'Cliente avulso') AS cliente_nome
+     FROM pedidos p
+     LEFT JOIN clientes c ON c.id = p.cliente_id
+     ORDER BY p.criado_em DESC
+     LIMIT 4"
+)->fetchAll();
+
+function tempoDecorrido(string $dataHora): string
+{
+    $minutos = intdiv(time() - strtotime($dataHora), 60);
+
+    if ($minutos < 1) {
+        return 'agora mesmo';
+    }
+
+    if ($minutos < 60) {
+        return $minutos . ' min';
+    }
+
+    $horas = intdiv($minutos, 60);
+    $minutosRestantes = $minutos % 60;
+
+    return $minutosRestantes > 0 ? "{$horas}h {$minutosRestantes}min" : "{$horas}h";
+}
+
+$corEstado = [
+    'Pendente' => 'secondary',
+    'Em Preparacao' => 'warning',
+    'Pronto' => 'info',
+    'Entregue' => 'success',
+    'Cancelado' => 'danger',
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -73,10 +137,10 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
@@ -88,8 +152,12 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                     <div class="d-flex justify-content-between">
                         <div>
                             <span class="text-muted small">Pedidos Hoje</span>
-                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;">24</h2>
-                            <small class="text-success"><i class="fas fa-arrow-up me-1"></i> +12%</small>
+                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;"><?= $pedidosHoje ?></h2>
+                            <?php if ($variacaoPedidos !== null): ?>
+                                <small class="text-<?= $variacaoPedidos >= 0 ? 'success' : 'danger' ?>">
+                                    <i class="fas fa-arrow-<?= $variacaoPedidos >= 0 ? 'up' : 'down' ?> me-1"></i> <?= $variacaoPedidos ?>% vs ontem
+                                </small>
+                            <?php endif; ?>
                         </div>
                         <div class="card-icon" style="background: rgba(201, 168, 76, 0.15); color: #c9a84c;">
                             <i class="fas fa-clipboard-list fs-3"></i>
@@ -102,8 +170,7 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                     <div class="d-flex justify-content-between">
                         <div>
                             <span class="text-muted small">Clientes</span>
-                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;">89</h2>
-                            <small class="text-success"><i class="fas fa-arrow-up me-1"></i> +5%</small>
+                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;"><?= $totalClientes ?></h2>
                         </div>
                         <div class="card-icon" style="background: rgba(26, 60, 42, 0.15); color: #1a3c2a;">
                             <i class="fas fa-user-friends fs-3"></i>
@@ -116,8 +183,7 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                     <div class="d-flex justify-content-between">
                         <div>
                             <span class="text-muted small">Produtos</span>
-                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;">42</h2>
-                            <small class="text-danger"><i class="fas fa-arrow-down me-1"></i> -2%</small>
+                            <h2 class="fw-bold mt-1" style="color: #1a3c2a;"><?= $totalProdutos ?></h2>
                         </div>
                         <div class="card-icon" style="background: rgba(26, 60, 42, 0.15); color: #1a3c2a;">
                             <i class="fas fa-box fs-3"></i>
@@ -129,9 +195,13 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <div class="card card-dashboard p-3">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <span class="text-muted small">Faturacao</span>
-                            <h2 class="fw-bold mt-1" style="color: #c9a84c;">Kz 12.450</h2>
-                            <small class="text-success"><i class="fas fa-arrow-up me-1"></i> +18%</small>
+                            <span class="text-muted small">Faturacao Hoje</span>
+                            <h2 class="fw-bold mt-1" style="color: #c9a84c;">Kz <?= number_format($faturacaoHoje, 2) ?></h2>
+                            <?php if ($variacaoFaturacao !== null): ?>
+                                <small class="text-<?= $variacaoFaturacao >= 0 ? 'success' : 'danger' ?>">
+                                    <i class="fas fa-arrow-<?= $variacaoFaturacao >= 0 ? 'up' : 'down' ?> me-1"></i> <?= $variacaoFaturacao ?>% vs ontem
+                                </small>
+                            <?php endif; ?>
                         </div>
                         <div class="card-icon" style="background: rgba(201, 168, 76, 0.15); color: #c9a84c;">
                             <i class="fas fa-money-bill-wave fs-3"></i>
@@ -149,34 +219,12 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                         <i class="fas fa-chart-line" style="color: #c9a84c;"></i> Vendas Ultimos 7 Dias
                     </h6>
                     <div class="d-flex justify-content-between align-items-end" style="height: 200px;">
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 120px; background: #1a3c2a; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Seg</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 80px; background: #1a3c2a; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Ter</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 160px; background: #c9a84c; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Qua</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 200px; background: #c9a84c; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Qui</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 140px; background: #1a3c2a; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Sex</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 90px; background: #1a3c2a; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Sab</small>
-                        </div>
-                        <div class="text-center flex-grow-1">
-                            <div class="barra" style="height: 180px; background: #c9a84c; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;"></div>
-                            <small class="text-muted">Dom</small>
-                        </div>
+                        <?php foreach ($vendas7Dias as $dia): ?>
+                            <div class="text-center flex-grow-1">
+                                <div class="barra" style="height: <?= max(4, round(($dia['valor'] / $maiorVenda) * 200)) ?>px; background: #1a3c2a; width: 30px; margin: 0 auto; border-radius: 6px 6px 0 0;" title="Kz <?= number_format($dia['valor'], 2) ?>"></div>
+                                <small class="text-muted"><?= $dia['label'] ?></small>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
@@ -185,24 +233,18 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                     <h6 class="fw-semibold mb-3">
                         <i class="fas fa-clock" style="color: #c9a84c;"></i> Ultimos Pedidos
                     </h6>
-                    <ul class="list-unstyled">
-                        <li class="d-flex justify-content-between py-2 border-bottom">
-                            <span><span class="badge bg-success">#123</span> Joao Silva</span>
-                            <span class="text-muted small">10 min</span>
-                        </li>
-                        <li class="d-flex justify-content-between py-2 border-bottom">
-                            <span><span class="badge bg-warning text-dark">#122</span> Maria Santos</span>
-                            <span class="text-muted small">25 min</span>
-                        </li>
-                        <li class="d-flex justify-content-between py-2 border-bottom">
-                            <span><span class="badge bg-success">#121</span> Pedro Costa</span>
-                            <span class="text-muted small">1h</span>
-                        </li>
-                        <li class="d-flex justify-content-between py-2">
-                            <span><span class="badge bg-danger">#120</span> Ana Pereira</span>
-                            <span class="text-muted small">1h 30min</span>
-                        </li>
-                    </ul>
+                    <?php if (empty($ultimosPedidos)): ?>
+                        <p class="text-muted small">Ainda nao ha pedidos.</p>
+                    <?php else: ?>
+                        <ul class="list-unstyled">
+                            <?php foreach ($ultimosPedidos as $p): ?>
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span><span class="badge bg-<?= $corEstado[$p['estado']] ?? 'secondary' ?>">#<?= $p['id'] ?></span> <?= htmlspecialchars($p['cliente_nome']) ?></span>
+                                    <span class="text-muted small"><?= tempoDecorrido($p['criado_em']) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
                     <a href="pedidos.php" class="btn btn-sm w-100 mt-2" style="background: #c9a84c; color: #1a3c2a;">
                         <i class="fas fa-eye me-1"></i> Ver todos os pedidos
                     </a>

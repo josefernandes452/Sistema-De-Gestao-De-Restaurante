@@ -48,17 +48,6 @@ function logout() {
 }
 
 // ============================================
-// DADOS FICTICIOS
-// ============================================
-var pagamentos = [
-    { id: 1, pedido: '#123', cliente: 'Joao Silva', valor: 2450, metodo: 'Cartao de Credito', status: 'Pago', data: '2026-06-30 14:35' },
-    { id: 2, pedido: '#122', cliente: 'Maria Santos', valor: 1200, metodo: 'Dinheiro', status: 'Pago', data: '2026-06-30 13:20' },
-    { id: 3, pedido: '#121', cliente: 'Pedro Costa', valor: 1800, metodo: 'Multicaixa Express', status: 'Pendente', data: '2026-06-30 12:10' },
-    { id: 4, pedido: '#120', cliente: 'Ana Pereira', valor: 1550, metodo: 'Cartao de Debito', status: 'Pago', data: '2026-06-29 20:50' }
-];
-var proximoIdPagamento = 5;
-
-// ============================================
 // UTILIZADORES - CRUD
 // A tabela ja vem pronta do servidor (ver views/admin/utilizadores.php).
 // Este JS so cuida do modal: abrir, preencher ao editar, e o filtro de
@@ -452,163 +441,41 @@ function filtrarPedidos() {
 // ============================================
 // PAGAMENTOS - CRUD
 // ============================================
-function carregarPagamentos() {
-    var tbody = document.getElementById('tabelaPagamentos');
-    var total = document.getElementById('totalPagamentos');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < pagamentos.length; i++) {
-        var pag = pagamentos[i];
-        var statusClass = pag.status === 'Pago' ? 'success' : pag.status === 'Pendente' ? 'warning' : 'danger';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + pag.pedido + '</td>' +
-            '<td>' + pag.cliente + '</td>' +
-            '<td><strong>Kz ' + pag.valor.toFixed(2) + '</strong></td>' +
-            '<td><span class="badge bg-info">' + pag.metodo + '</span></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + pag.status + '</span></td>' +
-            '<td>' + pag.data + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarPagamento(' + pag.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarPagamento(' + pag.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + pagamentos.length + ' pagamentos';
-}
-
 function abrirModalPagamento() {
-    document.getElementById('pagamentoId').value = '';
-    document.getElementById('modalPagamentoTitulo').innerHTML = '<i class="fas fa-credit-card me-2"></i> Novo Pagamento';
-    document.getElementById('btnSalvarPagamento').textContent = 'Salvar';
     document.getElementById('formPagamento').reset();
     var modal = new bootstrap.Modal(document.getElementById('modalPagamento'));
     modal.show();
 }
 
-function editarPagamento(id) {
-    var pag = null;
-    for (var i = 0; i < pagamentos.length; i++) {
-        if (pagamentos[i].id === id) {
-            pag = pagamentos[i];
-            break;
-        }
+// Ao escolher o pedido, sugere logo o valor total dele (o utilizador
+// pode mudar, por exemplo se o pagamento for so parcial).
+function preencherValorPagamento(select) {
+    var opcaoEscolhida = select.options[select.selectedIndex];
+    if (opcaoEscolhida && opcaoEscolhida.dataset.total) {
+        document.getElementById('valorPagamento').value = opcaoEscolhida.dataset.total;
     }
-    if (!pag) return;
-    
-    document.getElementById('pagamentoId').value = pag.id;
-    document.getElementById('modalPagamentoTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Pagamento';
-    document.getElementById('btnSalvarPagamento').textContent = 'Atualizar';
-    document.getElementById('pedidoPagamento').value = pag.pedido;
-    document.getElementById('valorPagamento').value = pag.valor;
-    document.getElementById('metodoPagamento').value = pag.metodo;
-    document.getElementById('statusPagamento').value = pag.status;
-    var modal = new bootstrap.Modal(document.getElementById('modalPagamento'));
-    modal.show();
-}
-
-function salvarPagamento() {
-    var id = document.getElementById('pagamentoId').value;
-    var pedido = document.getElementById('pedidoPagamento').value;
-    var valor = parseFloat(document.getElementById('valorPagamento').value);
-    var metodo = document.getElementById('metodoPagamento').value;
-    var status = document.getElementById('statusPagamento').value;
-    
-    if (!pedido || isNaN(valor) || !metodo) {
-        alert('Preencha todos os campos obrigatorios!');
-        return;
-    }
-    
-    var agora = new Date().toLocaleString('pt-PT', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-    }).replace(/\//g, '-');
-    
-    var cliente = 'Cliente';
-    for (var i = 0; i < pedidos.length; i++) {
-        if (pedidos[i].id.toString() === pedido.replace('#', '')) {
-            cliente = pedidos[i].cliente;
-            break;
-        }
-    }
-    
-    if (id) {
-        for (var i = 0; i < pagamentos.length; i++) {
-            if (pagamentos[i].id === parseInt(id)) {
-                pagamentos[i].pedido = pedido;
-                pagamentos[i].valor = valor;
-                pagamentos[i].metodo = metodo;
-                pagamentos[i].status = status;
-                break;
-            }
-        }
-    } else {
-        pagamentos.push({
-            id: proximoIdPagamento++,
-            pedido: pedido,
-            cliente: cliente,
-            valor: valor,
-            metodo: metodo,
-            status: status,
-            data: agora
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalPagamento'));
-    modal.hide();
-    carregarPagamentos();
-    alert(id ? 'Pagamento atualizado com sucesso!' : 'Pagamento criado com sucesso!');
 }
 
 function eliminarPagamento(id) {
     if (confirm('Tem certeza que deseja eliminar este pagamento?')) {
-        var novoArray = [];
-        for (var i = 0; i < pagamentos.length; i++) {
-            if (pagamentos[i].id !== id) {
-                novoArray.push(pagamentos[i]);
-            }
-        }
-        pagamentos = novoArray;
-        carregarPagamentos();
-        alert('Pagamento eliminado com sucesso!');
+        document.getElementById('eliminarPagamentoId').value = id;
+        document.getElementById('formEliminarPagamento').submit();
     }
 }
 
 function filtrarPagamentos() {
     var termo = document.getElementById('pesquisaPagamento').value.toLowerCase();
-    var tbody = document.getElementById('tabelaPagamentos');
+    var linhas = document.querySelectorAll('#tabelaPagamentos tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalPagamentos');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < pagamentos.length; i++) {
-        if (pagamentos[i].cliente.toLowerCase().includes(termo) || pagamentos[i].pedido.includes(termo) || pagamentos[i].metodo.toLowerCase().includes(termo)) {
-            filtrados.push(pagamentos[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var pag = filtrados[i];
-        var statusClass = pag.status === 'Pago' ? 'success' : pag.status === 'Pendente' ? 'warning' : 'danger';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + pag.pedido + '</td>' +
-            '<td>' + pag.cliente + '</td>' +
-            '<td><strong>Kz ' + pag.valor.toFixed(2) + '</strong></td>' +
-            '<td><span class="badge bg-info">' + pag.metodo + '</span></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + pag.status + '</span></td>' +
-            '<td>' + pag.data + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarPagamento(' + pag.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarPagamento(' + pag.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' pagamentos (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' pagamentos';
 }
 
 // ============================================
@@ -655,9 +522,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Carregar dados conforme a pagina
     switch(page) {
-        case 'pagamentos.php':
-            if (typeof carregarPagamentos === 'function') carregarPagamentos();
-            break;
         case 'relatorios.php':
             var hoje = new Date().toISOString().split('T')[0];
             var semana = new Date();

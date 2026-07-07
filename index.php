@@ -79,6 +79,14 @@ switch ($rota) {
         (new PedidoController())->eliminar();
         break;
 
+    case 'pagamentos.guardar':
+        (new PagamentoController())->guardar();
+        break;
+
+    case 'pagamentos.eliminar':
+        (new PagamentoController())->eliminar();
+        break;
+
     default:
         header('Location: /views/cliente/index.php');
         exit;
