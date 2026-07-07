@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$clienteModel = new ClienteModel();
+$lista = $clienteModel->todosComContagemPedidos();
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -52,13 +56,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
@@ -88,11 +98,37 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaClientes"></tbody>
+                    <tbody id="tabelaClientes">
+                        <?php foreach ($lista as $i => $c): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><i class="fas fa-user-circle" style="color: #c9a84c;"></i> <?= htmlspecialchars($c['nome']) ?></td>
+                                <td><?= htmlspecialchars($c['email'] ?: '-') ?></td>
+                                <td><?= htmlspecialchars($c['telefone']) ?></td>
+                                <td><?= htmlspecialchars($c['nif'] ?: '-') ?></td>
+                                <td><span class="badge bg-info"><?= (int) $c['total_pedidos'] ?></span></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                        onclick="editarCliente(this)"
+                                        data-id="<?= $c['id'] ?>"
+                                        data-nome="<?= htmlspecialchars($c['nome']) ?>"
+                                        data-email="<?= htmlspecialchars($c['email'] ?? '') ?>"
+                                        data-telefone="<?= htmlspecialchars($c['telefone']) ?>"
+                                        data-nif="<?= htmlspecialchars($c['nif'] ?? '') ?>"
+                                        data-endereco="<?= htmlspecialchars($c['endereco'] ?? '') ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarCliente(<?= $c['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalClientes">Total: 0 clientes</span>
+                <span class="text-muted small" id="totalClientes">Total: <?= count($lista) ?> clientes</span>
             </div>
         </div>
 
@@ -103,48 +139,54 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <div class="modal fade" id="modalCliente" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalClienteTitulo"><i class="fas fa-user-plus me-2"></i> Novo Cliente</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formCliente">
-                        <input type="hidden" id="clienteId">
+                <form id="formCliente" method="post" action="/index.php?rota=clientes.guardar">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="id" id="clienteId">
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title" id="modalClienteTitulo"><i class="fas fa-user-plus me-2"></i> Novo Cliente</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Nome</label>
-                                <input type="text" class="form-control" id="nomeCliente" placeholder="Nome completo" required>
+                                <input type="text" name="nome" class="form-control" id="nomeCliente" placeholder="Nome completo" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Email</label>
-                                <input type="email" class="form-control" id="emailCliente" placeholder="exemplo@email.com">
+                                <input type="email" name="email" class="form-control" id="emailCliente" placeholder="exemplo@email.com">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Telefone</label>
-                                <input type="tel" class="form-control" id="telefoneCliente" placeholder="+244 900 000 000" required>
+                                <input type="tel" name="telefone" class="form-control" id="telefoneCliente" placeholder="+244 900 000 000" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">NIF</label>
-                                <input type="text" class="form-control" id="nifCliente" placeholder="Numero de contribuinte">
+                                <input type="text" name="nif" class="form-control" id="nifCliente" placeholder="Numero de contribuinte">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Endereco</label>
-                            <input type="text" class="form-control" id="enderecoCliente" placeholder="Rua, bairro, cidade">
+                            <input type="text" name="endereco" class="form-control" id="enderecoCliente" placeholder="Rua, bairro, cidade">
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarCliente()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarCliente">Salvar</span>
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> <span id="btnSalvarCliente">Salvar</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    <form id="formEliminarCliente" method="post" action="/index.php?rota=clientes.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarClienteId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>

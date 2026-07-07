@@ -50,22 +50,6 @@ function logout() {
 // ============================================
 // DADOS FICTICIOS
 // ============================================
-var mesas = [
-    { id: 1, numero: 1, capacidade: 4, localizacao: 'Salao Principal', status: 'Livre', ocupadoPor: '-' },
-    { id: 2, numero: 2, capacidade: 2, localizacao: 'Salao Principal', status: 'Ocupada', ocupadoPor: 'Joao Silva' },
-    { id: 3, numero: 3, capacidade: 6, localizacao: 'Salao Principal', status: 'Livre', ocupadoPor: '-' },
-    { id: 4, numero: 4, capacidade: 4, localizacao: 'Varanda', status: 'Reservada', ocupadoPor: 'Maria Santos' }
-];
-var proximoIdMesa = 5;
-
-var clientes = [
-    { id: 1, nome: 'Joao Silva', email: 'joao@email.com', telefone: '923456789', nif: '123456789', totalPedidos: 5 },
-    { id: 2, nome: 'Maria Santos', email: 'maria@email.com', telefone: '934567890', nif: '987654321', totalPedidos: 3 },
-    { id: 3, nome: 'Pedro Costa', email: 'pedro@email.com', telefone: '945678901', nif: '', totalPedidos: 8 },
-    { id: 4, nome: 'Ana Pereira', email: 'ana@email.com', telefone: '956789012', nif: '456789123', totalPedidos: 2 }
-];
-var proximoIdCliente = 5;
-
 var pedidos = [
     { id: 1, cliente: 'Joao Silva', mesa: 'Mesa 1', total: 2450, status: 'Entregue', data: '2026-06-30 14:30' },
     { id: 2, cliente: 'Maria Santos', mesa: 'Mesa 4', total: 1200, status: 'Em Preparacao', data: '2026-06-30 13:15' },
@@ -252,32 +236,6 @@ function preVisualizarImagem(input) {
 // ============================================
 // MESAS - CRUD
 // ============================================
-function carregarMesas() {
-    var tbody = document.getElementById('tabelaMesas');
-    var total = document.getElementById('totalMesas');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < mesas.length; i++) {
-        var mesa = mesas[i];
-        var statusClass = mesa.status === 'Livre' ? 'success' : mesa.status === 'Ocupada' ? 'danger' : mesa.status === 'Reservada' ? 'warning' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td><strong>Mesa ' + mesa.numero + '</strong></td>' +
-            '<td>' + mesa.capacidade + ' pessoas</td>' +
-            '<td>' + mesa.localizacao + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + mesa.status + '</span></td>' +
-            '<td>' + mesa.ocupadoPor + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarMesa(' + mesa.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarMesa(' + mesa.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + mesas.length + ' mesas';
-}
-
 function abrirModalMesa() {
     document.getElementById('mesaId').value = '';
     document.getElementById('modalMesaTitulo').innerHTML = '<i class="fas fa-chair me-2"></i> Nova Mesa';
@@ -287,143 +245,43 @@ function abrirModalMesa() {
     modal.show();
 }
 
-function editarMesa(id) {
-    var mesa = null;
-    for (var i = 0; i < mesas.length; i++) {
-        if (mesas[i].id === id) {
-            mesa = mesas[i];
-            break;
-        }
-    }
-    if (!mesa) return;
-    
-    document.getElementById('mesaId').value = mesa.id;
+function editarMesa(botao) {
+    document.getElementById('mesaId').value = botao.dataset.id;
     document.getElementById('modalMesaTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Mesa';
     document.getElementById('btnSalvarMesa').textContent = 'Atualizar';
-    document.getElementById('numeroMesa').value = mesa.numero;
-    document.getElementById('capacidadeMesa').value = mesa.capacidade;
-    document.getElementById('localizacaoMesa').value = mesa.localizacao;
-    document.getElementById('statusMesa').value = mesa.status;
+    document.getElementById('numeroMesa').value = botao.dataset.numero;
+    document.getElementById('capacidadeMesa').value = botao.dataset.capacidade;
+    document.getElementById('localizacaoMesa').value = botao.dataset.localizacao;
+    document.getElementById('statusMesa').value = botao.dataset.estado;
     var modal = new bootstrap.Modal(document.getElementById('modalMesa'));
     modal.show();
 }
 
-function salvarMesa() {
-    var id = document.getElementById('mesaId').value;
-    var numero = parseInt(document.getElementById('numeroMesa').value);
-    var capacidade = parseInt(document.getElementById('capacidadeMesa').value);
-    var localizacao = document.getElementById('localizacaoMesa').value.trim();
-    var status = document.getElementById('statusMesa').value;
-    
-    if (!numero || !capacidade) {
-        alert('Preencha todos os campos obrigatorios!');
-        return;
-    }
-    
-    if (id) {
-        for (var i = 0; i < mesas.length; i++) {
-            if (mesas[i].id === parseInt(id)) {
-                mesas[i].numero = numero;
-                mesas[i].capacidade = capacidade;
-                mesas[i].localizacao = localizacao;
-                mesas[i].status = status;
-                mesas[i].ocupadoPor = status === 'Ocupada' ? 'Cliente' : '-';
-                break;
-            }
-        }
-    } else {
-        mesas.push({
-            id: proximoIdMesa++,
-            numero: numero,
-            capacidade: capacidade,
-            localizacao: localizacao,
-            status: status,
-            ocupadoPor: status === 'Ocupada' ? 'Cliente' : '-'
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalMesa'));
-    modal.hide();
-    carregarMesas();
-    alert(id ? 'Mesa atualizada com sucesso!' : 'Mesa criada com sucesso!');
-}
-
 function eliminarMesa(id) {
     if (confirm('Tem certeza que deseja eliminar esta mesa?')) {
-        var novoArray = [];
-        for (var i = 0; i < mesas.length; i++) {
-            if (mesas[i].id !== id) {
-                novoArray.push(mesas[i]);
-            }
-        }
-        mesas = novoArray;
-        carregarMesas();
-        alert('Mesa eliminada com sucesso!');
+        document.getElementById('eliminarMesaId').value = id;
+        document.getElementById('formEliminarMesa').submit();
     }
 }
 
 function filtrarMesas() {
     var termo = document.getElementById('pesquisaMesa').value.toLowerCase();
-    var tbody = document.getElementById('tabelaMesas');
+    var linhas = document.querySelectorAll('#tabelaMesas tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalMesas');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < mesas.length; i++) {
-        if (mesas[i].numero.toString().includes(termo) || mesas[i].localizacao.toLowerCase().includes(termo)) {
-            filtrados.push(mesas[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var mesa = filtrados[i];
-        var statusClass = mesa.status === 'Livre' ? 'success' : mesa.status === 'Ocupada' ? 'danger' : mesa.status === 'Reservada' ? 'warning' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td><strong>Mesa ' + mesa.numero + '</strong></td>' +
-            '<td>' + mesa.capacidade + ' pessoas</td>' +
-            '<td>' + mesa.localizacao + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + mesa.status + '</span></td>' +
-            '<td>' + mesa.ocupadoPor + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarMesa(' + mesa.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarMesa(' + mesa.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' mesas (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' mesas';
 }
 
 // ============================================
 // CLIENTES - CRUD
 // ============================================
-function carregarClientes() {
-    var tbody = document.getElementById('tabelaClientes');
-    var total = document.getElementById('totalClientes');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < clientes.length; i++) {
-        var cli = clientes[i];
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td><i class="fas fa-user-circle" style="color: #c9a84c;"></i> ' + cli.nome + '</td>' +
-            '<td>' + (cli.email || '-') + '</td>' +
-            '<td>' + cli.telefone + '</td>' +
-            '<td>' + (cli.nif || '-') + '</td>' +
-            '<td><span class="badge bg-info">' + cli.totalPedidos + '</span></td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarCliente(' + cli.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarCliente(' + cli.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + clientes.length + ' clientes';
-}
-
 function abrirModalCliente() {
     document.getElementById('clienteId').value = '';
     document.getElementById('modalClienteTitulo').innerHTML = '<i class="fas fa-user-plus me-2"></i> Novo Cliente';
@@ -433,115 +291,39 @@ function abrirModalCliente() {
     modal.show();
 }
 
-function editarCliente(id) {
-    var cli = null;
-    for (var i = 0; i < clientes.length; i++) {
-        if (clientes[i].id === id) {
-            cli = clientes[i];
-            break;
-        }
-    }
-    if (!cli) return;
-    
-    document.getElementById('clienteId').value = cli.id;
+function editarCliente(botao) {
+    document.getElementById('clienteId').value = botao.dataset.id;
     document.getElementById('modalClienteTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Cliente';
     document.getElementById('btnSalvarCliente').textContent = 'Atualizar';
-    document.getElementById('nomeCliente').value = cli.nome;
-    document.getElementById('emailCliente').value = cli.email;
-    document.getElementById('telefoneCliente').value = cli.telefone;
-    document.getElementById('nifCliente').value = cli.nif;
-    document.getElementById('enderecoCliente').value = cli.endereco || '';
+    document.getElementById('nomeCliente').value = botao.dataset.nome;
+    document.getElementById('emailCliente').value = botao.dataset.email;
+    document.getElementById('telefoneCliente').value = botao.dataset.telefone;
+    document.getElementById('nifCliente').value = botao.dataset.nif;
+    document.getElementById('enderecoCliente').value = botao.dataset.endereco;
     var modal = new bootstrap.Modal(document.getElementById('modalCliente'));
     modal.show();
 }
 
-function salvarCliente() {
-    var id = document.getElementById('clienteId').value;
-    var nome = document.getElementById('nomeCliente').value.trim();
-    var email = document.getElementById('emailCliente').value.trim();
-    var telefone = document.getElementById('telefoneCliente').value.trim();
-    var nif = document.getElementById('nifCliente').value.trim();
-    var endereco = document.getElementById('enderecoCliente').value.trim();
-    
-    if (!nome || !telefone) {
-        alert('Preencha nome e telefone!');
-        return;
-    }
-    
-    if (id) {
-        for (var i = 0; i < clientes.length; i++) {
-            if (clientes[i].id === parseInt(id)) {
-                clientes[i].nome = nome;
-                clientes[i].email = email;
-                clientes[i].telefone = telefone;
-                clientes[i].nif = nif;
-                clientes[i].endereco = endereco;
-                break;
-            }
-        }
-    } else {
-        clientes.push({
-            id: proximoIdCliente++,
-            nome: nome,
-            email: email,
-            telefone: telefone,
-            nif: nif,
-            endereco: endereco,
-            totalPedidos: 0
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalCliente'));
-    modal.hide();
-    carregarClientes();
-    alert(id ? 'Cliente atualizado com sucesso!' : 'Cliente criado com sucesso!');
-}
-
 function eliminarCliente(id) {
     if (confirm('Tem certeza que deseja eliminar este cliente?')) {
-        var novoArray = [];
-        for (var i = 0; i < clientes.length; i++) {
-            if (clientes[i].id !== id) {
-                novoArray.push(clientes[i]);
-            }
-        }
-        clientes = novoArray;
-        carregarClientes();
-        alert('Cliente eliminado com sucesso!');
+        document.getElementById('eliminarClienteId').value = id;
+        document.getElementById('formEliminarCliente').submit();
     }
 }
 
 function filtrarClientes() {
     var termo = document.getElementById('pesquisaCliente').value.toLowerCase();
-    var tbody = document.getElementById('tabelaClientes');
+    var linhas = document.querySelectorAll('#tabelaClientes tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalClientes');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < clientes.length; i++) {
-        if (clientes[i].nome.toLowerCase().includes(termo) || (clientes[i].email && clientes[i].email.toLowerCase().includes(termo))) {
-            filtrados.push(clientes[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var cli = filtrados[i];
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + cli.nome + '</td>' +
-            '<td>' + (cli.email || '-') + '</td>' +
-            '<td>' + cli.telefone + '</td>' +
-            '<td>' + (cli.nif || '-') + '</td>' +
-            '<td><span class="badge bg-info">' + cli.totalPedidos + '</span></td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarCliente(' + cli.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarCliente(' + cli.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' clientes (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' clientes';
 }
 
 // ============================================
@@ -939,12 +721,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Carregar dados conforme a pagina
     switch(page) {
-        case 'mesas.php':
-            if (typeof carregarMesas === 'function') carregarMesas();
-            break;
-        case 'clientes.php':
-            if (typeof carregarClientes === 'function') carregarClientes();
-            break;
         case 'pedidos.php':
             if (typeof carregarPedidos === 'function') carregarPedidos();
             break;

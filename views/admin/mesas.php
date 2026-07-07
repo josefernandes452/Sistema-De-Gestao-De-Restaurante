@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$mesaModel = new MesaModel();
+$lista = $mesaModel->todos();
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -52,13 +56,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
@@ -84,15 +94,41 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th>Capacidade</th>
                             <th>Localizacao</th>
                             <th>Status</th>
-                            <th>Ocupado Por</th>
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaMesas"></tbody>
+                    <tbody id="tabelaMesas">
+                        <?php foreach ($lista as $i => $m): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><strong>Mesa <?= $m['numero'] ?></strong></td>
+                                <td><?= $m['capacidade'] ?> pessoas</td>
+                                <td><?= htmlspecialchars($m['localizacao'] ?: '-') ?></td>
+                                <td>
+                                    <?php $corEstado = ['Livre' => 'success', 'Ocupada' => 'danger', 'Reservada' => 'warning']; ?>
+                                    <span class="badge bg-<?= $corEstado[$m['estado']] ?? 'secondary' ?>"><?= htmlspecialchars($m['estado']) ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                        onclick="editarMesa(this)"
+                                        data-id="<?= $m['id'] ?>"
+                                        data-numero="<?= $m['numero'] ?>"
+                                        data-capacidade="<?= $m['capacidade'] ?>"
+                                        data-localizacao="<?= htmlspecialchars($m['localizacao'] ?? '') ?>"
+                                        data-estado="<?= htmlspecialchars($m['estado']) ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarMesa(<?= $m['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalMesas">Total: 0 mesas</span>
+                <span class="text-muted small" id="totalMesas">Total: <?= count($lista) ?> mesas</span>
             </div>
         </div>
 
@@ -103,45 +139,50 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <div class="modal fade" id="modalMesa" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalMesaTitulo"><i class="fas fa-chair me-2"></i> Nova Mesa</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formMesa">
-                        <input type="hidden" id="mesaId">
+                <form id="formMesa" method="post" action="/index.php?rota=mesas.guardar">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="id" id="mesaId">
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title" id="modalMesaTitulo"><i class="fas fa-chair me-2"></i> Nova Mesa</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Numero da Mesa</label>
-                            <input type="number" class="form-control" id="numeroMesa" placeholder="Ex: 1" required>
+                            <input type="number" name="numero" class="form-control" id="numeroMesa" placeholder="Ex: 1" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Capacidade</label>
-                            <input type="number" class="form-control" id="capacidadeMesa" placeholder="Ex: 4" required>
+                            <input type="number" name="capacidade" class="form-control" id="capacidadeMesa" placeholder="Ex: 4" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Localizacao</label>
-                            <input type="text" class="form-control" id="localizacaoMesa" placeholder="Ex: Salao Principal">
+                            <input type="text" name="localizacao" class="form-control" id="localizacaoMesa" placeholder="Ex: Salao Principal">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Status</label>
-                            <select class="form-select" id="statusMesa">
+                            <select class="form-select" name="estado" id="statusMesa">
                                 <option value="Livre">Livre</option>
                                 <option value="Ocupada">Ocupada</option>
                                 <option value="Reservada">Reservada</option>
-                                <option value="Manutencao">Manutencao</option>
                             </select>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarMesa()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarMesa">Salvar</span>
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> <span id="btnSalvarMesa">Salvar</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    <form id="formEliminarMesa" method="post" action="/index.php?rota=mesas.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarMesaId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>

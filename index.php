@@ -51,6 +51,22 @@ switch ($rota) {
         (new ProdutoController())->eliminar();
         break;
 
+    case 'mesas.guardar':
+        (new MesaController())->guardar();
+        break;
+
+    case 'mesas.eliminar':
+        (new MesaController())->eliminar();
+        break;
+
+    case 'clientes.guardar':
+        (new ClienteController())->guardar();
+        break;
+
+    case 'clientes.eliminar':
+        (new ClienteController())->eliminar();
+        break;
+
     default:
         header('Location: /views/cliente/index.php');
         exit;
