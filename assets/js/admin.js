@@ -183,21 +183,6 @@ function eliminarProduto(id) {
     }
 }
 
-function filtrarProdutos() {
-    var termo = document.getElementById('pesquisaProduto').value.toLowerCase();
-    var linhas = document.querySelectorAll('#tabelaProdutos tr');
-    var visiveis = 0;
-
-    linhas.forEach(function (linha) {
-        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
-        linha.style.display = mostra ? '' : 'none';
-        if (mostra) visiveis++;
-    });
-
-    var total = document.getElementById('totalProdutos');
-    if (total) total.textContent = 'Total: ' + visiveis + ' produtos';
-}
-
 // Mostra uma previa da imagem escolhida antes de guardar o produto.
 function preVisualizarImagem(input) {
     var previa = document.getElementById('previaImagemProduto');
@@ -423,21 +408,6 @@ function eliminarPedido(id) {
     }
 }
 
-function filtrarPedidos() {
-    var termo = document.getElementById('pesquisaPedido').value.toLowerCase();
-    var linhas = document.querySelectorAll('#tabelaPedidos tr');
-    var visiveis = 0;
-
-    linhas.forEach(function (linha) {
-        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
-        linha.style.display = mostra ? '' : 'none';
-        if (mostra) visiveis++;
-    });
-
-    var total = document.getElementById('totalPedidos');
-    if (total) total.textContent = 'Total: ' + visiveis + ' pedidos';
-}
-
 // ============================================
 // PAGAMENTOS - CRUD
 // ============================================
@@ -479,35 +449,13 @@ function filtrarPagamentos() {
 }
 
 // ============================================
-// RELATORIOS
-// ============================================
-function gerarRelatorio() {
-    var tipo = document.getElementById('tipoRelatorio').value;
-    var dataInicio = document.getElementById('dataInicio').value;
-    var dataFim = document.getElementById('dataFim').value;
-    
-    if (!dataInicio || !dataFim) {
-        alert('Selecione as datas de inicio e fim!');
-        return;
-    }
-    
-    alert('Relatorio de ' + tipo + ' gerado de ' + dataInicio + ' ate ' + dataFim);
-}
-
-function exportarRelatorio() {
-    alert('Relatorio exportado com sucesso!');
-}
-
-// ============================================
 // INICIALIZAR
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    var page = window.location.pathname.split('/').pop();
-    
     // Relogio
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
-    
+
     // Fechar sidebar ao clicar fora (mobile)
     document.addEventListener('click', function(e) {
         var sidebar = document.getElementById('sidebar');
@@ -519,18 +467,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
-    // Carregar dados conforme a pagina
-    switch(page) {
-        case 'relatorios.php':
-            var hoje = new Date().toISOString().split('T')[0];
-            var semana = new Date();
-            semana.setDate(semana.getDate() - 7);
-            var semanaStr = semana.toISOString().split('T')[0];
-            if (document.getElementById('dataInicio')) {
-                document.getElementById('dataInicio').value = semanaStr;
-                document.getElementById('dataFim').value = hoje;
-            }
-            break;
-    }
 });

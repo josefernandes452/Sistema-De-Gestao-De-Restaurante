@@ -14,3 +14,6 @@
 Thumbs.db
 .claude/
 composer.phar
+
+# Cache da API de cambio (gerado automaticamente)
+/assets/cache/*.json

@@ -4,9 +4,17 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
 
 $produtoModel = new ProdutoModel();
 $categoriaModel = new CategoriaModel();
-$lista = $produtoModel->todosComCategoria();
 $categorias = $categoriaModel->todos();
 $flash = Sessao::consumirFlash();
+
+$pesquisaNome = Validador::texto($_GET['nome'] ?? '');
+$pesquisaCodigo = Validador::inteiro($_GET['codigo'] ?? '') ?: null;
+$pesquisaCategoria = Validador::inteiro($_GET['categoria_id'] ?? '') ?: null;
+$emPesquisa = $pesquisaNome !== '' || $pesquisaCodigo || $pesquisaCategoria;
+
+$lista = $emPesquisa
+    ? $produtoModel->pesquisar($pesquisaNome ?: null, $pesquisaCodigo, $pesquisaCategoria)
+    : $produtoModel->todosComCategoria();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -72,18 +80,38 @@ $flash = Sessao::consumirFlash();
             </div>
         <?php endif; ?>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-search" style="color: #c9a84c;"></i></span>
-                    <input type="text" class="form-control" id="pesquisaProduto" placeholder="Pesquisar produto..." onkeyup="filtrarProdutos()">
-                </div>
+        <form method="get" class="row g-2 mb-4 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Nome</label>
+                <input type="text" name="nome" class="form-control" placeholder="Pesquisar por nome..." value="<?= htmlspecialchars($pesquisaNome) ?>">
             </div>
-            <div class="col-md-6 text-md-end">
-                <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="abrirModalProduto()">
-                    <i class="fas fa-plus me-1"></i> Novo Produto
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Codigo</label>
+                <input type="number" name="codigo" class="form-control" placeholder="#" value="<?= htmlspecialchars((string) ($pesquisaCodigo ?? '')) ?>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Categoria</label>
+                <select name="categoria_id" class="form-select">
+                    <option value="">Todas</option>
+                    <?php foreach ($categorias as $c): ?>
+                        <option value="<?= $c['id'] ?>" <?= $pesquisaCategoria === (int) $c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['nome']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn flex-grow-1" style="background: #c9a84c; color: #1a3c2a;">
+                    <i class="fas fa-search me-1"></i> Pesquisar
                 </button>
+                <?php if ($emPesquisa): ?>
+                    <a href="produtos.php" class="btn btn-outline-secondary" title="Limpar pesquisa"><i class="fas fa-times"></i></a>
+                <?php endif; ?>
             </div>
+        </form>
+
+        <div class="text-md-end mb-3">
+            <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="abrirModalProduto()">
+                <i class="fas fa-plus me-1"></i> Novo Produto
+            </button>
         </div>
 
         <div class="card card-dashboard p-0">

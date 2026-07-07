@@ -7,7 +7,12 @@ $mesaModel = new MesaModel();
 $clienteModel = new ClienteModel();
 $produtoModel = new ProdutoModel();
 
-$lista = $pedidoModel->todosComDetalhes();
+$pesquisaCodigo = Validador::inteiro($_GET['codigo'] ?? '') ?: null;
+$pesquisaDataInicio = Validador::texto($_GET['data_inicio'] ?? '') ?: null;
+$pesquisaDataFim = Validador::texto($_GET['data_fim'] ?? '') ?: null;
+$emPesquisa = $pesquisaCodigo || $pesquisaDataInicio || $pesquisaDataFim;
+
+$lista = $pedidoModel->todosComDetalhes($pesquisaCodigo, $pesquisaDataInicio, $pesquisaDataFim);
 $mesas = $mesaModel->todos();
 $clientes = $clienteModel->todos();
 $produtos = $produtoModel->todos();
@@ -85,14 +90,31 @@ $corEstado = [
             </div>
         <?php endif; ?>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="fas fa-search" style="color: #c9a84c;"></i></span>
-                    <input type="text" class="form-control" id="pesquisaPedido" placeholder="Pesquisar pedido..." onkeyup="filtrarPedidos()">
-                </div>
+        <form method="get" class="row g-2 mb-4 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Codigo</label>
+                <input type="number" name="codigo" class="form-control" placeholder="#" value="<?= htmlspecialchars((string) ($pesquisaCodigo ?? '')) ?>">
             </div>
-            <div class="col-md-6 text-md-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">De</label>
+                <input type="date" name="data_inicio" class="form-control" value="<?= htmlspecialchars($pesquisaDataInicio ?? '') ?>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Ate</label>
+                <input type="date" name="data_fim" class="form-control" value="<?= htmlspecialchars($pesquisaDataFim ?? '') ?>">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn flex-grow-1" style="background: #c9a84c; color: #1a3c2a;">
+                    <i class="fas fa-search me-1"></i> Pesquisar
+                </button>
+                <?php if ($emPesquisa): ?>
+                    <a href="pedidos.php" class="btn btn-outline-secondary" title="Limpar pesquisa"><i class="fas fa-times"></i></a>
+                <?php endif; ?>
+            </div>
+        </form>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 text-md-end">
                 <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="abrirModalPedido()">
                     <i class="fas fa-plus me-1"></i> Novo Pedido
                 </button>

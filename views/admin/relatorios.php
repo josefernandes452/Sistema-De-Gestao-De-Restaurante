@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$dataInicio = Validador::texto($_GET['data_inicio'] ?? '') ?: date('Y-m-d', strtotime('-7 day'));
+$dataFim = Validador::texto($_GET['data_fim'] ?? '') ?: date('Y-m-d');
+
+$relatorioModel = new RelatorioModel();
+$produtosMaisVendidos = $relatorioModel->produtosMaisVendidos($dataInicio, $dataFim);
+$vendasPorPeriodo = $relatorioModel->vendasPorPeriodo($dataInicio, $dataFim);
+$desempenhoPorOperador = $relatorioModel->desempenhoPorOperador($dataInicio, $dataFim);
+
+$totalPedidosPeriodo = array_sum(array_column($vendasPorPeriodo, 'total_pedidos'));
+$totalVendidoPeriodo = array_sum(array_column($vendasPorPeriodo, 'total_vendido'));
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -8,7 +19,7 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatorios - Sabor Alma Admin</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../assets/css/admin.css">
@@ -52,121 +63,147 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
 
-        <!-- CARDS ESTATISTICAS -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="card card-dashboard p-3 text-center">
-                    <h6 class="text-muted">Total Pedidos</h6>
-                    <h2 class="fw-bold" style="color: #1a3c2a;">156</h2>
-                    <small class="text-muted">Ultimos 30 dias</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-dashboard p-3 text-center">
-                    <h6 class="text-muted">Faturacao Total</h6>
-                    <h2 class="fw-bold" style="color: #c9a84c;">Kz 12.450</h2>
-                    <small class="text-muted">Ultimos 30 dias</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-dashboard p-3 text-center">
-                    <h6 class="text-muted">Clientes Ativos</h6>
-                    <h2 class="fw-bold" style="color: #1a3c2a;">89</h2>
-                    <small class="text-muted">Ultimos 30 dias</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-dashboard p-3 text-center">
-                    <h6 class="text-muted">Produtos Vendidos</h6>
-                    <h2 class="fw-bold" style="color: #1a3c2a;">342</h2>
-                    <small class="text-muted">Ultimos 30 dias</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- FILTROS -->
+        <!-- FILTRO DE PERIODO -->
         <div class="card card-dashboard p-4 mb-4">
-            <h6 class="fw-semibold mb-3"><i class="fas fa-filter" style="color: #c9a84c;"></i> Filtrar Relatorios</h6>
-            <div class="row g-3">
-                <div class="col-md-3">
+            <h6 class="fw-semibold mb-3"><i class="fas fa-filter" style="color: #c9a84c;"></i> Periodo</h6>
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Data Inicio</label>
-                    <input type="date" class="form-control" id="dataInicio">
+                    <input type="date" name="data_inicio" class="form-control" value="<?= htmlspecialchars($dataInicio) ?>">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Data Fim</label>
-                    <input type="date" class="form-control" id="dataFim">
+                    <input type="date" name="data_fim" class="form-control" value="<?= htmlspecialchars($dataFim) ?>">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tipo</label>
-                    <select class="form-select" id="tipoRelatorio">
-                        <option value="todos">Todos</option>
-                        <option value="vendas">Vendas</option>
-                        <option value="clientes">Clientes</option>
-                        <option value="produtos">Produtos</option>
-                        <option value="pagamentos">Pagamentos</option>
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button class="btn w-100" style="background: #c9a84c; color: #1a3c2a;" onclick="gerarRelatorio()">
-                        <i class="fas fa-search me-1"></i> Gerar Relatorio
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn w-100" style="background: #c9a84c; color: #1a3c2a;">
+                        <i class="fas fa-search me-1"></i> Atualizar Relatorios
                     </button>
                 </div>
+            </form>
+        </div>
+
+        <!-- CARDS RESUMO -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card card-dashboard p-3 text-center">
+                    <h6 class="text-muted">Total de Pedidos</h6>
+                    <h2 class="fw-bold" style="color: #1a3c2a;"><?= $totalPedidosPeriodo ?></h2>
+                    <small class="text-muted">No periodo escolhido</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-dashboard p-3 text-center">
+                    <h6 class="text-muted">Faturacao</h6>
+                    <h2 class="fw-bold" style="color: #c9a84c;">Kz <?= number_format($totalVendidoPeriodo, 2) ?></h2>
+                    <small class="text-muted">No periodo escolhido</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-dashboard p-3 text-center">
+                    <h6 class="text-muted">Produtos Diferentes Vendidos</h6>
+                    <h2 class="fw-bold" style="color: #1a3c2a;"><?= count($produtosMaisVendidos) ?></h2>
+                    <small class="text-muted">No periodo escolhido</small>
+                </div>
             </div>
         </div>
 
-        <!-- TABELA RELATORIO -->
-        <div class="card card-dashboard p-0">
-            <div class="card-header bg-white d-flex justify-content-between">
-                <h6 class="fw-semibold mb-0"><i class="fas fa-table" style="color: #c9a84c;"></i> Relatorio de Vendas</h6>
-                <button class="btn btn-sm" style="background: #c9a84c; color: #1a3c2a;" onclick="exportarRelatorio()">
-                    <i class="fas fa-download me-1"></i> Exportar
-                </button>
+        <!-- RELATORIO 1: PRODUTOS MAIS VENDIDOS -->
+        <div class="card card-dashboard p-0 mb-4">
+            <div class="card-header bg-white">
+                <h6 class="fw-semibold mb-0"><i class="fas fa-utensils" style="color: #c9a84c;"></i> Produtos Mais Vendidos</h6>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Data</th>
-                            <th>Pedido</th>
-                            <th>Cliente</th>
-                            <th>Produtos</th>
-                            <th>Total</th>
-                            <th>Status</th>
+                            <th>Produto</th>
+                            <th>Quantidade Vendida</th>
+                            <th>Total Faturado</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaRelatorio">
+                    <tbody>
+                        <?php if (empty($produtosMaisVendidos)): ?>
+                            <tr><td colspan="3" class="text-muted text-center py-3">Sem vendas neste periodo.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($produtosMaisVendidos as $p): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($p['nome']) ?></td>
+                                    <td><?= (int) $p['total_vendido'] ?></td>
+                                    <td><strong>Kz <?= number_format((float) $p['total_faturado'], 2) ?></strong></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RELATORIO 2: VENDAS POR PERIODO -->
+        <div class="card card-dashboard p-0 mb-4">
+            <div class="card-header bg-white">
+                <h6 class="fw-semibold mb-0"><i class="fas fa-chart-line" style="color: #c9a84c;"></i> Vendas por Periodo</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>2026-06-30 14:30</td>
-                            <td>#123</td>
-                            <td>Joao Silva</td>
-                            <td>Bife a Casa, Refrigerante</td>
-                            <td>Kz 2.450,00</td>
-                            <td><span class="badge bg-success">Pago</span></td>
+                            <th>Dia</th>
+                            <th>Pedidos</th>
+                            <th>Total Vendido</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($vendasPorPeriodo)): ?>
+                            <tr><td colspan="3" class="text-muted text-center py-3">Sem pedidos neste periodo.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($vendasPorPeriodo as $dia): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($dia['dia']) ?></td>
+                                    <td><?= (int) $dia['total_pedidos'] ?></td>
+                                    <td><strong>Kz <?= number_format((float) $dia['total_vendido'], 2) ?></strong></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RELATORIO 3: DESEMPENHO POR OPERADOR -->
+        <div class="card card-dashboard p-0 mb-4">
+            <div class="card-header bg-white">
+                <h6 class="fw-semibold mb-0"><i class="fas fa-user-tie" style="color: #c9a84c;"></i> Desempenho por Operador</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>2026-06-30 13:15</td>
-                            <td>#122</td>
-                            <td>Maria Santos</td>
-                            <td>Salada Mista, Suco Natural</td>
-                            <td>Kz 1.200,00</td>
-                            <td><span class="badge bg-success">Pago</span></td>
+                            <th>Operador</th>
+                            <th>Pedidos Registados</th>
+                            <th>Total Vendido</th>
                         </tr>
-                        <tr>
-                            <td>2026-06-30 12:00</td>
-                            <td>#121</td>
-                            <td>Pedro Costa</td>
-                            <td>Frango Grelhado, Batata Frita</td>
-                            <td>Kz 1.800,00</td>
-                            <td><span class="badge bg-warning">Pendente</span></td>
-                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($desempenhoPorOperador)): ?>
+                            <tr><td colspan="3" class="text-muted text-center py-3">Sem pedidos neste periodo.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($desempenhoPorOperador as $op): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($op['operador']) ?></td>
+                                    <td><?= (int) $op['total_pedidos'] ?></td>
+                                    <td><strong>Kz <?= number_format((float) $op['total_vendido'], 2) ?></strong></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>

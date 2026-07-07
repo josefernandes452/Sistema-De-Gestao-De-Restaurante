@@ -65,6 +65,10 @@ $corEstado = [
     'Entregue' => 'success',
     'Cancelado' => 'danger',
 ];
+
+// Taxa de cambio (Exchange Rate API), para converter a faturacao
+// de hoje para dolar e euro.
+$taxasCambio = ExchangeRate::obterTaxas();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -202,6 +206,11 @@ $corEstado = [
                                     <i class="fas fa-arrow-<?= $variacaoFaturacao >= 0 ? 'up' : 'down' ?> me-1"></i> <?= $variacaoFaturacao ?>% vs ontem
                                 </small>
                             <?php endif; ?>
+                            <?php if ($taxasCambio): ?>
+                                <small class="text-muted d-block mt-1">
+                                    ≈ $<?= number_format($faturacaoHoje / $taxasCambio['aoa_por_usd'], 2) ?> / €<?= number_format($faturacaoHoje / $taxasCambio['aoa_por_eur'], 2) ?>
+                                </small>
+                            <?php endif; ?>
                         </div>
                         <div class="card-icon" style="background: rgba(201, 168, 76, 0.15); color: #c9a84c;">
                             <i class="fas fa-money-bill-wave fs-3"></i>
@@ -210,6 +219,13 @@ $corEstado = [
                 </div>
             </div>
         </div>
+
+        <?php if ($taxasCambio): ?>
+            <div class="text-muted small mb-4">
+                <i class="fas fa-exchange-alt me-1" style="color: #c9a84c;"></i>
+                Cambio de hoje: 1 USD = Kz <?= number_format($taxasCambio['aoa_por_usd'], 2) ?> &middot; 1 EUR = Kz <?= number_format($taxasCambio['aoa_por_eur'], 2) ?>
+            </div>
+        <?php endif; ?>
 
         <!-- GRAFICO -->
         <div class="row">

@@ -8,16 +8,37 @@ class PedidoModel extends Model
 
     // Lista os pedidos com o numero da mesa, o nome do cliente (se
     // houver) e os itens de cada um, tudo pronto para a tela de
-    // gestao de pedidos.
-    public function todosComDetalhes(): array
+    // gestao de pedidos. Os filtros (codigo do pedido, intervalo de
+    // datas) so entram na consulta se vierem preenchidos.
+    public function todosComDetalhes(?int $codigo = null, ?string $dataInicio = null, ?string $dataFim = null): array
     {
         $sql = 'SELECT p.*, m.numero AS mesa_numero, c.nome AS cliente_nome
                 FROM pedidos p
                 JOIN mesas m ON m.id = p.mesa_id
                 LEFT JOIN clientes c ON c.id = p.cliente_id
-                ORDER BY p.criado_em DESC';
+                WHERE 1 = 1';
+        $parametros = [];
 
-        $pedidos = $this->pdo->query($sql)->fetchAll();
+        if ($codigo) {
+            $sql .= ' AND p.id = ?';
+            $parametros[] = $codigo;
+        }
+
+        if ($dataInicio) {
+            $sql .= ' AND DATE(p.criado_em) >= ?';
+            $parametros[] = $dataInicio;
+        }
+
+        if ($dataFim) {
+            $sql .= ' AND DATE(p.criado_em) <= ?';
+            $parametros[] = $dataFim;
+        }
+
+        $sql .= ' ORDER BY p.criado_em DESC';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($parametros);
+        $pedidos = $stmt->fetchAll();
 
         if (!$pedidos) {
             return [];
