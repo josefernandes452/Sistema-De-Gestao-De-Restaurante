@@ -67,6 +67,18 @@ switch ($rota) {
         (new ClienteController())->eliminar();
         break;
 
+    case 'pedidos.criar':
+        (new PedidoController())->criar();
+        break;
+
+    case 'pedidos.estado':
+        (new PedidoController())->atualizarEstado();
+        break;
+
+    case 'pedidos.eliminar':
+        (new PedidoController())->eliminar();
+        break;
+
     default:
         header('Location: /views/cliente/index.php');
         exit;

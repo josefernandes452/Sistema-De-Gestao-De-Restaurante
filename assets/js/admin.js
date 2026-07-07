@@ -50,14 +50,6 @@ function logout() {
 // ============================================
 // DADOS FICTICIOS
 // ============================================
-var pedidos = [
-    { id: 1, cliente: 'Joao Silva', mesa: 'Mesa 1', total: 2450, status: 'Entregue', data: '2026-06-30 14:30' },
-    { id: 2, cliente: 'Maria Santos', mesa: 'Mesa 4', total: 1200, status: 'Em Preparacao', data: '2026-06-30 13:15' },
-    { id: 3, cliente: 'Pedro Costa', mesa: 'Mesa 2', total: 1800, status: 'Pendente', data: '2026-06-30 12:00' },
-    { id: 4, cliente: 'Ana Pereira', mesa: 'Mesa 3', total: 1550, status: 'Pronto', data: '2026-06-29 20:45' }
-];
-var proximoIdPedido = 5;
-
 var pagamentos = [
     { id: 1, pedido: '#123', cliente: 'Joao Silva', valor: 2450, metodo: 'Cartao de Credito', status: 'Pago', data: '2026-06-30 14:35' },
     { id: 2, pedido: '#122', cliente: 'Maria Santos', valor: 1200, metodo: 'Dinheiro', status: 'Pago', data: '2026-06-30 13:20' },
@@ -328,191 +320,133 @@ function filtrarClientes() {
 
 // ============================================
 // PEDIDOS - CRUD
+// A tabela ja vem pronta do servidor. Aqui so fica o carrinho de
+// produtos do "Novo Pedido", o modal de mudar estado, o "ver
+// detalhes" e o filtro.
 // ============================================
-function carregarPedidos() {
-    var tbody = document.getElementById('tabelaPedidos');
-    var total = document.getElementById('totalPedidos');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < pedidos.length; i++) {
-        var ped = pedidos[i];
-        var statusClass = ped.status === 'Entregue' ? 'success' : ped.status === 'Em Preparacao' ? 'warning' : ped.status === 'Pronto' ? 'info' : ped.status === 'Cancelado' ? 'danger' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>#' + ped.id + '</td>' +
-            '<td>' + ped.cliente + '</td>' +
-            '<td>' + ped.mesa + '</td>' +
-            '<td><strong>Kz ' + ped.total.toFixed(2) + '</strong></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + ped.status + '</span></td>' +
-            '<td>' + ped.data + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-info me-1" onclick="verPedido(' + ped.id + ')"><i class="fas fa-eye"></i></button>' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarPedido(' + ped.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarPedido(' + ped.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + pedidos.length + ' pedidos';
-}
+var carrinhoPedido = [];
 
 function abrirModalPedido() {
-    document.getElementById('pedidoId').value = '';
-    document.getElementById('modalPedidoTitulo').innerHTML = '<i class="fas fa-clipboard-list me-2"></i> Novo Pedido';
-    document.getElementById('btnSalvarPedido').textContent = 'Salvar';
+    carrinhoPedido = [];
+    renderizarCarrinhoPedido();
     document.getElementById('formPedido').reset();
     var modal = new bootstrap.Modal(document.getElementById('modalPedido'));
     modal.show();
 }
 
-function editarPedido(id) {
-    var ped = null;
-    for (var i = 0; i < pedidos.length; i++) {
-        if (pedidos[i].id === id) {
-            ped = pedidos[i];
-            break;
-        }
-    }
-    if (!ped) return;
-    
-    document.getElementById('pedidoId').value = ped.id;
-    document.getElementById('modalPedidoTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Pedido';
-    document.getElementById('btnSalvarPedido').textContent = 'Atualizar';
-    document.getElementById('clientePedido').value = ped.cliente;
-    document.getElementById('mesaPedido').value = ped.mesa;
-    document.getElementById('statusPedido').value = ped.status;
-    document.getElementById('totalPedido').value = ped.total.toFixed(2);
-    var modal = new bootstrap.Modal(document.getElementById('modalPedido'));
+function adicionarItemPedido() {
+    var select = document.getElementById('produtoParaAdicionar');
+    var opcaoEscolhida = select.options[select.selectedIndex];
+    var quantidade = parseInt(document.getElementById('quantidadeParaAdicionar').value) || 1;
+
+    if (!opcaoEscolhida || quantidade < 1) return;
+
+    carrinhoPedido.push({
+        produtoId: opcaoEscolhida.value,
+        nome: opcaoEscolhida.dataset.nome,
+        preco: parseFloat(opcaoEscolhida.dataset.preco),
+        quantidade: quantidade
+    });
+
+    renderizarCarrinhoPedido();
+}
+
+function removerItemPedido(indice) {
+    carrinhoPedido.splice(indice, 1);
+    renderizarCarrinhoPedido();
+}
+
+// Desenha a tabela do carrinho e, ao mesmo tempo, cria os campos
+// escondidos (produto_id[] e quantidade[]) que vao mesmo no POST.
+function renderizarCarrinhoPedido() {
+    var tbody = document.getElementById('carrinhoPedidoTabela');
+    var escondidos = document.getElementById('itensPedidoEscondidos');
+    var total = 0;
+
+    tbody.innerHTML = '';
+    escondidos.innerHTML = '';
+
+    carrinhoPedido.forEach(function (item, indice) {
+        var subtotal = item.preco * item.quantidade;
+        total += subtotal;
+
+        var linha = document.createElement('tr');
+        linha.innerHTML =
+            '<td>' + item.nome + '</td>' +
+            '<td>' + item.quantidade + '</td>' +
+            '<td>Kz ' + subtotal.toFixed(2) + '</td>' +
+            '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removerItemPedido(' + indice + ')"><i class="fas fa-times"></i></button></td>';
+        tbody.appendChild(linha);
+
+        escondidos.innerHTML +=
+            '<input type="hidden" name="produto_id[]" value="' + item.produtoId + '">' +
+            '<input type="hidden" name="quantidade[]" value="' + item.quantidade + '">';
+    });
+
+    document.getElementById('totalCarrinhoPedido').textContent = 'Kz ' + total.toFixed(2);
+}
+
+function verPedido(botao) {
+    var ped = JSON.parse(botao.dataset.pedido);
+    var detalhes = document.getElementById('detalhesPedido');
+
+    var linhasItens = '';
+    ped.itens.forEach(function (item) {
+        linhasItens +=
+            '<li class="d-flex justify-content-between border-bottom py-2">' +
+                '<span>' + item.produto_nome + '</span>' +
+                '<span>' + item.quantidade + ' x Kz ' + parseFloat(item.preco_unitario).toFixed(2) + '</span>' +
+            '</li>';
+    });
+
+    detalhes.innerHTML =
+        '<div class="row">' +
+            '<div class="col-md-6">' +
+                '<p><strong>Cliente:</strong> ' + (ped.cliente_nome || 'Cliente avulso') + '</p>' +
+                '<p><strong>Mesa:</strong> Mesa ' + ped.mesa_numero + '</p>' +
+                '<p><strong>Data:</strong> ' + ped.criado_em + '</p>' +
+            '</div>' +
+            '<div class="col-md-6">' +
+                '<p><strong>Total:</strong> Kz ' + parseFloat(ped.total).toFixed(2) + '</p>' +
+                '<p><strong>Status:</strong> ' + ped.estado + '</p>' +
+                (ped.observacoes ? '<p><strong>Observacoes:</strong> ' + ped.observacoes + '</p>' : '') +
+            '</div>' +
+        '</div>' +
+        '<hr>' +
+        '<h6 class="fw-semibold">Itens do Pedido</h6>' +
+        '<ul class="list-unstyled">' + linhasItens + '</ul>';
+
+    var modal = new bootstrap.Modal(document.getElementById('modalVerPedido'));
     modal.show();
 }
 
-function salvarPedido() {
-    var id = document.getElementById('pedidoId').value;
-    var cliente = document.getElementById('clientePedido').value;
-    var mesa = document.getElementById('mesaPedido').value;
-    var status = document.getElementById('statusPedido').value;
-    var total = parseFloat(document.getElementById('totalPedido').value) || 0;
-    
-    if (!cliente || !mesa) {
-        alert('Selecione cliente e mesa!');
-        return;
-    }
-    
-    var agora = new Date().toLocaleString('pt-PT', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-    }).replace(/\//g, '-');
-    
-    if (id) {
-        for (var i = 0; i < pedidos.length; i++) {
-            if (pedidos[i].id === parseInt(id)) {
-                pedidos[i].cliente = cliente;
-                pedidos[i].mesa = mesa;
-                pedidos[i].status = status;
-                pedidos[i].total = total;
-                break;
-            }
-        }
-    } else {
-        pedidos.push({
-            id: proximoIdPedido++,
-            cliente: cliente,
-            mesa: mesa,
-            total: total,
-            status: status,
-            data: agora
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalPedido'));
-    modal.hide();
-    carregarPedidos();
-    alert(id ? 'Pedido atualizado com sucesso!' : 'Pedido criado com sucesso!');
-}
-
-function verPedido(id) {
-    var ped = null;
-    for (var i = 0; i < pedidos.length; i++) {
-        if (pedidos[i].id === id) {
-            ped = pedidos[i];
-            break;
-        }
-    }
-    if (!ped) return;
-    
-    var detalhes = document.getElementById('detalhesPedido');
-    if (detalhes) {
-        detalhes.innerHTML = 
-            '<div class="row">' +
-                '<div class="col-md-6">' +
-                    '<p><strong>Cliente:</strong> ' + ped.cliente + '</p>' +
-                    '<p><strong>Mesa:</strong> ' + ped.mesa + '</p>' +
-                    '<p><strong>Data:</strong> ' + ped.data + '</p>' +
-                '</div>' +
-                '<div class="col-md-6">' +
-                    '<p><strong>Total:</strong> Kz ' + ped.total.toFixed(2) + '</p>' +
-                    '<p><strong>Status:</strong> <span class="badge bg-success">' + ped.status + '</span></p>' +
-                '</div>' +
-            '</div>' +
-            '<hr>' +
-            '<h6 class="fw-semibold">Itens do Pedido</h6>' +
-            '<ul class="list-unstyled">' +
-                '<li class="d-flex justify-content-between border-bottom py-2"><span>Bife a Casa</span><span>1 x Kz 2.500,00</span></li>' +
-                '<li class="d-flex justify-content-between py-2"><span>Refrigerante</span><span>2 x Kz 300,00</span></li>' +
-            '</ul>';
-    }
-    
-    var modal = new bootstrap.Modal(document.getElementById('modalVerPedido'));
+function editarEstadoPedido(botao) {
+    document.getElementById('estadoPedidoId').value = botao.dataset.id;
+    document.getElementById('novoEstadoPedido').value = botao.dataset.estado;
+    var modal = new bootstrap.Modal(document.getElementById('modalEstadoPedido'));
     modal.show();
 }
 
 function eliminarPedido(id) {
     if (confirm('Tem certeza que deseja eliminar este pedido?')) {
-        var novoArray = [];
-        for (var i = 0; i < pedidos.length; i++) {
-            if (pedidos[i].id !== id) {
-                novoArray.push(pedidos[i]);
-            }
-        }
-        pedidos = novoArray;
-        carregarPedidos();
-        alert('Pedido eliminado com sucesso!');
+        document.getElementById('eliminarPedidoId').value = id;
+        document.getElementById('formEliminarPedido').submit();
     }
 }
 
 function filtrarPedidos() {
     var termo = document.getElementById('pesquisaPedido').value.toLowerCase();
-    var tbody = document.getElementById('tabelaPedidos');
+    var linhas = document.querySelectorAll('#tabelaPedidos tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalPedidos');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < pedidos.length; i++) {
-        if (pedidos[i].cliente.toLowerCase().includes(termo) || pedidos[i].mesa.toLowerCase().includes(termo) || pedidos[i].id.toString().includes(termo)) {
-            filtrados.push(pedidos[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var ped = filtrados[i];
-        var statusClass = ped.status === 'Entregue' ? 'success' : ped.status === 'Em Preparacao' ? 'warning' : ped.status === 'Pronto' ? 'info' : ped.status === 'Cancelado' ? 'danger' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>#' + ped.id + '</td>' +
-            '<td>' + ped.cliente + '</td>' +
-            '<td>' + ped.mesa + '</td>' +
-            '<td><strong>Kz ' + ped.total.toFixed(2) + '</strong></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + ped.status + '</span></td>' +
-            '<td>' + ped.data + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-info me-1" onclick="verPedido(' + ped.id + ')"><i class="fas fa-eye"></i></button>' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarPedido(' + ped.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarPedido(' + ped.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' pedidos (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' pedidos';
 }
 
 // ============================================
@@ -721,9 +655,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Carregar dados conforme a pagina
     switch(page) {
-        case 'pedidos.php':
-            if (typeof carregarPedidos === 'function') carregarPedidos();
-            break;
         case 'pagamentos.php':
             if (typeof carregarPagamentos === 'function') carregarPagamentos();
             break;

@@ -1,6 +1,25 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$pedidoModel = new PedidoModel();
+$mesaModel = new MesaModel();
+$clienteModel = new ClienteModel();
+$produtoModel = new ProdutoModel();
+
+$lista = $pedidoModel->todosComDetalhes();
+$mesas = $mesaModel->todos();
+$clientes = $clienteModel->todos();
+$produtos = $produtoModel->todos();
+$flash = Sessao::consumirFlash();
+
+$corEstado = [
+    'Pendente' => 'secondary',
+    'Em Preparacao' => 'warning',
+    'Pronto' => 'info',
+    'Entregue' => 'success',
+    'Cancelado' => 'danger',
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -52,13 +71,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
@@ -88,84 +113,121 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaPedidos"></tbody>
+                    <tbody id="tabelaPedidos">
+                        <?php foreach ($lista as $p): ?>
+                            <tr>
+                                <td>#<?= $p['id'] ?></td>
+                                <td><?= htmlspecialchars($p['cliente_nome'] ?: 'Cliente avulso') ?></td>
+                                <td>Mesa <?= $p['mesa_numero'] ?></td>
+                                <td><strong>Kz <?= number_format((float) $p['total'], 2) ?></strong></td>
+                                <td><span class="badge bg-<?= $corEstado[$p['estado']] ?? 'secondary' ?>"><?= htmlspecialchars($p['estado']) ?></span></td>
+                                <td><?= htmlspecialchars($p['criado_em']) ?></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-info me-1"
+                                        onclick="verPedido(this)"
+                                        data-pedido="<?= htmlspecialchars(json_encode($p), ENT_QUOTES) ?>">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                        onclick="editarEstadoPedido(this)"
+                                        data-id="<?= $p['id'] ?>"
+                                        data-estado="<?= htmlspecialchars($p['estado']) ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarPedido(<?= $p['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalPedidos">Total: 0 pedidos</span>
+                <span class="text-muted small" id="totalPedidos">Total: <?= count($lista) ?> pedidos</span>
             </div>
         </div>
 
         <footer class="text-center text-muted small mt-4">&copy; 2026 Sabor Alma - Sistema de Gestao</footer>
     </div>
 
-    <!-- MODAL PEDIDO -->
+    <!-- MODAL NOVO PEDIDO -->
     <div class="modal fade" id="modalPedido" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalPedidoTitulo"><i class="fas fa-clipboard-list me-2"></i> Novo Pedido</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formPedido">
-                        <input type="hidden" id="pedidoId">
+                <form id="formPedido" method="post" action="/index.php?rota=pedidos.criar">
+                    <?= Csrf::campo() ?>
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title"><i class="fas fa-clipboard-list me-2"></i> Novo Pedido</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Cliente</label>
-                                <select class="form-select" id="clientePedido" required>
-                                    <option value="">Selecione</option>
-                                    <option value="Joao Silva">Joao Silva</option>
-                                    <option value="Maria Santos">Maria Santos</option>
-                                    <option value="Pedro Costa">Pedro Costa</option>
-                                    <option value="Ana Pereira">Ana Pereira</option>
-                                </select>
-                            </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Mesa</label>
-                                <select class="form-select" id="mesaPedido" required>
+                                <select class="form-select" name="mesa_id" id="mesaPedido" required>
                                     <option value="">Selecione</option>
-                                    <option value="Mesa 1">Mesa 1</option>
-                                    <option value="Mesa 2">Mesa 2</option>
-                                    <option value="Mesa 3">Mesa 3</option>
-                                    <option value="Mesa 4">Mesa 4</option>
-                                    <option value="Mesa 5">Mesa 5</option>
+                                    <?php foreach ($mesas as $m): ?>
+                                        <option value="<?= $m['id'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Cliente</label>
+                                <select class="form-select" name="cliente_id" id="clientePedido">
+                                    <option value="">Cliente avulso (sem conta)</option>
+                                    <?php foreach ($clientes as $c): ?>
+                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nome']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
+
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Itens do Pedido</label>
-                            <div class="border rounded p-3">
-                                <div id="itensPedido"></div>
-                                <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="adicionarItemPedido()">
-                                    <i class="fas fa-plus me-1"></i> Adicionar Item
-                                </button>
+                            <label class="form-label fw-semibold">Adicionar Produto</label>
+                            <div class="row g-2">
+                                <div class="col-7">
+                                    <select class="form-select" id="produtoParaAdicionar">
+                                        <?php foreach ($produtos as $p): ?>
+                                            <option value="<?= $p['id'] ?>" data-nome="<?= htmlspecialchars($p['nome']) ?>" data-preco="<?= $p['preco'] ?>">
+                                                <?= htmlspecialchars($p['nome']) ?> (Kz <?= number_format((float) $p['preco'], 2) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" class="form-control" id="quantidadeParaAdicionar" value="1" min="1">
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-outline-success w-100" onclick="adicionarItemPedido()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Total</label>
-                                <input type="text" class="form-control" id="totalPedido" value="0.00" readonly>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Status</label>
-                                <select class="form-select" id="statusPedido">
-                                    <option value="Pendente">Pendente</option>
-                                    <option value="Em Preparacao">Em Preparacao</option>
-                                    <option value="Pronto">Pronto</option>
-                                    <option value="Entregue">Entregue</option>
-                                    <option value="Cancelado">Cancelado</option>
-                                </select>
-                            </div>
+
+                        <table class="table table-sm">
+                            <thead>
+                                <tr><th>Produto</th><th>Qtd</th><th>Subtotal</th><th></th></tr>
+                            </thead>
+                            <tbody id="carrinhoPedidoTabela"></tbody>
+                        </table>
+                        <div class="text-end fw-bold mb-3">Total: <span id="totalCarrinhoPedido">Kz 0.00</span></div>
+
+                        <div id="itensPedidoEscondidos"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Observacoes</label>
+                            <textarea name="observacoes" class="form-control" id="observacoesPedido" rows="2" placeholder="Ex: sem cebola, alergia a amendoim..."></textarea>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarPedido()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarPedido">Salvar</span>
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> Criar Pedido
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -178,15 +240,48 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                     <h5 class="modal-title"><i class="fas fa-receipt me-2"></i> Detalhes do Pedido</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="detalhesPedido">
-                    <p class="text-muted">Carregando detalhes...</p>
-                </div>
+                <div class="modal-body" id="detalhesPedido"></div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- MODAL MUDAR ESTADO -->
+    <div class="modal fade" id="modalEstadoPedido" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="/index.php?rota=pedidos.estado">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="id" id="estadoPedidoId">
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title"><i class="fas fa-edit me-2"></i> Mudar Estado do Pedido</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label fw-semibold">Estado</label>
+                        <select class="form-select" name="estado" id="novoEstadoPedido">
+                            <option value="Pendente">Pendente</option>
+                            <option value="Em Preparacao">Em Preparacao</option>
+                            <option value="Pronto">Pronto</option>
+                            <option value="Entregue">Entregue</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">Atualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <form id="formEliminarPedido" method="post" action="/index.php?rota=pedidos.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarPedidoId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>

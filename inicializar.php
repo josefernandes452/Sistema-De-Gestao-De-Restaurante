@@ -17,5 +17,6 @@ require_once __DIR__ . '/controllers/CategoriaController.php';
 require_once __DIR__ . '/controllers/ProdutoController.php';
 require_once __DIR__ . '/controllers/MesaController.php';
 require_once __DIR__ . '/controllers/ClienteController.php';
+require_once __DIR__ . '/controllers/PedidoController.php';
 
 Sessao::iniciar();
