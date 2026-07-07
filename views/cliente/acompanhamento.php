@@ -149,9 +149,18 @@ foreach ($pedido['itens'] as $item) {
             var pedidoId = card.dataset.pedidoId;
             var estadoAtual = card.dataset.estado;
 
-            setInterval(function () {
+            // Se o pedido deixar de existir ou de ser nosso (por
+            // exemplo, foi eliminado), para de perguntar ao servidor
+            // em vez de continuar a martelar o endpoint para sempre.
+            var intervalo = setInterval(function () {
                 fetch('/index.php?rota=pedidos.estado-json&id=' + pedidoId)
-                    .then(function (resposta) { return resposta.ok ? resposta.json() : null; })
+                    .then(function (resposta) {
+                        if (!resposta.ok) {
+                            clearInterval(intervalo);
+                            return null;
+                        }
+                        return resposta.json();
+                    })
                     .then(function (dados) {
                         if (dados && dados.estado && dados.estado !== estadoAtual) {
                             window.location.reload();
@@ -159,6 +168,12 @@ foreach ($pedido['itens'] as $item) {
                     })
                     .catch(function () { /* tenta outra vez na proxima ronda */ });
             }, 8000);
+
+            // Tambem para quando o cliente sai da pagina, para nao
+            // deixar o temporizador a correr numa aba esquecida.
+            window.addEventListener('pagehide', function () {
+                clearInterval(intervalo);
+            });
         })();
     </script>
 </body>

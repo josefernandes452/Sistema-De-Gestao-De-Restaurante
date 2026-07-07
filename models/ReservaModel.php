@@ -18,4 +18,21 @@ class ReservaModel extends Model
 
         return $this->pdo->query($sql)->fetchAll();
     }
+
+    // Verifica se ja existe outra reserva confirmada para a mesma
+    // mesa, no mesmo dia e hora. Reservas canceladas nao contam,
+    // porque essa mesa/horario voltou a ficar livre.
+    public function existeConflito(int $mesaId, string $data, string $hora): bool
+    {
+        $sql = "SELECT id FROM reservas
+                WHERE mesa_id = ?
+                AND data = ?
+                AND hora = ?
+                AND estado != 'Cancelada'";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$mesaId, $data, $hora]);
+
+        return $stmt->fetch() !== false;
+    }
 }

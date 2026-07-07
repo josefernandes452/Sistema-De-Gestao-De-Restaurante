@@ -202,9 +202,12 @@ function escaparHtml(texto) {
 }
 
 // Chamada pelos botoes de filtro do cardapio. Alem de filtrar,
-// marca visualmente qual o botao ativo.
+// marca visualmente qual o botao ativo. So existe no menu.php
+// publico, por isso usa sempre o modo "redirecionar" (ver
+// renderizarMenu): quem nao esta na pagina de pedidos precisa de ser
+// levado para la antes de o produto poder ir para um carrinho de verdade.
 function filtrarMenu(filtro, botao) {
-    renderizarMenu('listaMenu', filtro);
+    renderizarMenu('listaMenu', filtro, 'redirecionar');
 
     if (botao) {
         var botoes = botao.parentElement.querySelectorAll('.btn');
@@ -215,12 +218,19 @@ function filtrarMenu(filtro, botao) {
     }
 }
 
-function renderizarMenu(containerId, filtro) {
+// modo "carrinho" (padrao, usado em pedidos.php): o botao Adicionar
+// mete o produto direto no carrinho da propria pagina.
+// modo "redirecionar" (usado em menu.php): a pagina do menu nao tem
+// carrinho nenhum, entao o botao manda o cliente para pedidos.php
+// com o produto ja identificado na URL, para la ele entrar sozinho
+// no carrinho (ver o tratamento de "?adicionar=" no DOMContentLoaded).
+function renderizarMenu(containerId, filtro, modo) {
     var container = document.getElementById(containerId);
     if (!container) return;
-    
+
     if (filtro === undefined) filtro = 'todos';
-    
+    if (modo === undefined) modo = 'carrinho';
+
     var filtered = [];
     if (filtro === 'todos') {
         filtered = menuData;
@@ -231,23 +241,30 @@ function renderizarMenu(containerId, filtro) {
             }
         }
     }
-    
+
     container.innerHTML = '';
-    
+
     for (var i = 0; i < filtered.length; i++) {
         var produto = filtered[i];
         var col = document.createElement('div');
         col.className = 'col-md-4 col-lg-3';
-        col.innerHTML = 
+
+        var imagemHtml = produto.imagem
+            ? '<img src="' + escaparHtml(produto.imagem) + '" alt="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 50%; margin: 0 auto; display: block;">'
+            : '<div style="width: 70px; height: 70px; background: #f5f0e8; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #c9a84c;"><i class="fas fa-utensils"></i></div>';
+
+        var onclickBotao = modo === 'redirecionar'
+            ? "window.location.href='pedidos.php?adicionar=" + produto.id + "'"
+            : 'adicionarAoCarrinho(' + produto.id + ')';
+
+        col.innerHTML =
             '<div class="card h-100 border-0 shadow-sm">' +
                 '<div class="card-body text-center">' +
-                    '<div style="width: 70px; height: 70px; background: #f5f0e8; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #c9a84c;">' +
-                        '<i class="fas fa-utensils"></i>' +
-                    '</div>' +
+                    imagemHtml +
                     '<h6 class="fw-bold mt-3">' + escaparHtml(produto.nome) + '</h6>' +
                     '<p class="text-muted small">' + escaparHtml(produto.descricao) + '</p>' +
                     '<p class="fw-bold" style="color: #c9a84c;">Kz ' + produto.preco.toFixed(2) + '</p>' +
-                    '<button class="btn btn-sm w-100" style="background: #c9a84c; color: #1a3c2a;" onclick="adicionarAoCarrinho(' + produto.id + ')">' +
+                    '<button class="btn btn-sm w-100" style="background: #c9a84c; color: #1a3c2a;" onclick="' + onclickBotao + '">' +
                         '<i class="fas fa-plus me-1"></i> Adicionar' +
                     '</button>' +
                 '</div>' +
@@ -267,12 +284,20 @@ document.addEventListener('DOMContentLoaded', function() {
     verificarLogin();
 
     if (page === 'menu.php') {
-        renderizarMenu('listaMenu', 'todos');
+        renderizarMenu('listaMenu', 'todos', 'redirecionar');
     }
 
     if (page === 'pedidos.php') {
         renderizarMenu('listaPedidos', 'todos');
         atualizarCarrinho();
+
+        // Se o cliente veio do menu.php com "Adicionar" num produto,
+        // o id chega aqui na URL (?adicionar=5). Metemos logo no
+        // carrinho para ele nao ter de procurar o produto outra vez.
+        var idParaAdicionar = new URLSearchParams(window.location.search).get('adicionar');
+        if (idParaAdicionar) {
+            adicionarAoCarrinho(parseInt(idParaAdicionar, 10));
+        }
     }
 
     if (page === 'perfil-cliente.php') {

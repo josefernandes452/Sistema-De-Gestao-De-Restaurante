@@ -37,3 +37,17 @@ require_once __DIR__ . '/controllers/ReservaController.php';
 
 Sessao::iniciar();
 LembrarMe::autoLogar();
+
+// A sessao guarda uma copia dos dados do utilizador para nao ter de
+// ir a base de dados em cada pedido. Mas se a conta for eliminada ou
+// desativada por um administrador enquanto a pessoa continua logada
+// noutro separador, essa copia fica desatualizada e ela continuava a
+// conseguir usar o site como se nada tivesse mudado. Aqui confirmamos
+// que a conta ainda existe e continua ativa a cada pedido.
+if (Sessao::estaLogado()) {
+    $utilizadorSessao = (new UsuarioModel())->buscarPorId(Sessao::utilizadorAtual()['id']);
+
+    if (!$utilizadorSessao || $utilizadorSessao['estado'] !== 'Ativo') {
+        Sessao::sair();
+    }
+}

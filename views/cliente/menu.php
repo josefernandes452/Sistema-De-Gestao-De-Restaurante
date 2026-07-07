@@ -33,6 +33,7 @@ $produtosMenu = array_map(
         'categoria' => categoriaParaFiltro($p['categoria_nome']),
         'preco' => (float) $p['preco'],
         'descricao' => $p['descricao'],
+        'imagem' => $p['imagem'] ? '../../assets/uploads/' . $p['imagem'] : null,
     ],
     $produtoModel->disponiveis()
 );

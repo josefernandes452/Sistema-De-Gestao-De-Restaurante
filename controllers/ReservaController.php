@@ -43,6 +43,15 @@ class ReservaController extends Controller
             $this->redirecionar('/views/cliente/reservas.php');
         }
 
+        // Impede duas reservas para a mesma mesa, no mesmo dia e
+        // hora. Nao ha gestao de duracao da refeicao, entao isto so
+        // apanha o conflito exato (mesmo dia e mesma hora), nao
+        // horarios proximos.
+        if ($this->reservaModel->existeConflito($mesaId, $data, $hora)) {
+            Sessao::flash('erro', 'Essa mesa ja esta reservada nesse dia e hora. Escolhe outro horario ou outra mesa.');
+            $this->redirecionar('/views/cliente/reservas.php');
+        }
+
         // Se quem esta a reservar tiver sessao de Cliente, ligamos a
         // reserva a conta dele. Se nao (visitante sem conta), fica
         // so com nome e telefone, tal como o schema ja previa.

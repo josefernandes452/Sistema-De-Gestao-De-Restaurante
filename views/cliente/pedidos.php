@@ -12,6 +12,7 @@ $produtosMenu = array_map(
         'categoria' => 'todos',
         'preco' => (float) $p['preco'],
         'descricao' => $p['descricao'],
+        'imagem' => $p['imagem'] ? '../../assets/uploads/' . $p['imagem'] : null,
     ],
     $produtoModel->disponiveis()
 );
