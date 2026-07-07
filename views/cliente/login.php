@@ -1,3 +1,17 @@
+<?php
+require_once __DIR__ . '/../../inicializar.php';
+
+if (Sessao::estaLogado()) {
+    $perfil = Sessao::utilizadorAtual()['perfil'];
+    $destino = in_array($perfil, ['Administrador', 'Operador'], true)
+        ? '/views/admin/dashboard.php'
+        : '/views/cliente/perfil-cliente.php';
+    header("Location: $destino");
+    exit;
+}
+
+$flash = Sessao::consumirFlash();
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -32,15 +46,16 @@
                             <p class="text-muted">Acesse sua conta Sabor Alma</p>
                         </div>
 
-                        <form id="formLogin" onsubmit="return fazerLogin(event)">
+                        <form id="formLogin" method="post" action="/index.php?rota=login">
+                            <?= Csrf::campo() ?>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Email</label>
-                                <input type="email" class="form-control" id="emailLogin" placeholder="Digite seu email" required>
+                                <input type="email" name="email" class="form-control" id="emailLogin" placeholder="Digite seu email" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Senha</label>
                                 <div class="input-group">
-                                    <input type="password" class="form-control" id="senhaLogin" placeholder="Digite sua senha" required>
+                                    <input type="password" name="senha" class="form-control" id="senhaLogin" placeholder="Digite sua senha" required>
                                     <button class="btn btn-outline-secondary" type="button" onclick="mostrarSenha()">
                                         <i class="fas fa-eye" id="iconeOlho"></i>
                                     </button>
@@ -58,10 +73,12 @@
                             </button>
                         </form>
 
-                        <div id="mensagemErro" class="alert alert-danger mt-3 d-none" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            <span id="textoErro">Email ou senha inválidos!</span>
-                        </div>
+                        <?php if ($flash): ?>
+                            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?> mt-3" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <?= htmlspecialchars($flash['mensagem']) ?>
+                            </div>
+                        <?php endif; ?>
 
                         <hr class="my-4">
 
@@ -89,44 +106,6 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="recuperarSenha()">Enviar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL CERTIFICADO -->
-    <div class="modal fade" id="modalCertificado" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title">Certificado de Autenticação</h5>
-                    <button type="button" class="btn-close btn-close-white" id="fecharCertificado"></button>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <div style="font-size: 60px; color: #c9a84c;">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h4 class="fw-bold mt-3" style="color: #1a3c2a;">Login Autorizado</h4>
-                    <div class="card border-0 bg-light p-3 mt-3 text-start">
-                        <div class="row g-2">
-                            <div class="col-6 text-muted small">Usuário:</div>
-                            <div class="col-6 fw-semibold" id="certUsuario">-</div>
-                            <div class="col-6 text-muted small">Email:</div>
-                            <div class="col-6 fw-semibold" id="certEmail">-</div>
-                            <div class="col-6 text-muted small">Tipo:</div>
-                            <div class="col-6 fw-semibold" id="certTipo">-</div>
-                            <div class="col-6 text-muted small">Data/Hora:</div>
-                            <div class="col-6 fw-semibold" id="certData">-</div>
-                            <div class="col-6 text-muted small">Certificado:</div>
-                            <div class="col-6 fw-semibold" id="certHash">-</div>
-                        </div>
-                    </div>
-                    <p class="text-muted small mt-3">
-                        <i class="fas fa-lock me-1"></i> Autoridade Certificadora - Sabor Alma
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" id="continuarLogin">Continuar</button>
                 </div>
             </div>
         </div>

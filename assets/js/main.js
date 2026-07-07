@@ -21,120 +21,8 @@ var usuarios = [
 ];
 
 // ============================================
-// FUNCAO PRINCIPAL DE LOGIN
-// ============================================
-function fazerLogin(event) {
-    event.preventDefault();
-    
-    var email = document.getElementById('emailLogin').value.trim();
-    var senha = document.getElementById('senhaLogin').value.trim();
-    var mensagemErro = document.getElementById('mensagemErro');
-    var textoErro = document.getElementById('textoErro');
-    
-    // Esconder erro anterior
-    mensagemErro.classList.add('d-none');
-    
-    // Validar campos
-    if (!email || !senha) {
-        textoErro.textContent = 'Por favor, preencha todos os campos!';
-        mensagemErro.classList.remove('d-none');
-        return false;
-    }
-    
-    // Procurar usuario
-    var user = null;
-    for (var i = 0; i < usuarios.length; i++) {
-        if (usuarios[i].email === email && usuarios[i].senha === senha) {
-            user = usuarios[i];
-            break;
-        }
-    }
-    
-    if (!user) {
-        textoErro.textContent = 'Email ou senha invalidos!';
-        mensagemErro.classList.remove('d-none');
-        return false;
-    }
-    
-    // Gerar certificado
-    var certificado = gerarCertificado(user);
-    
-    // Salvar na sessao
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('certificado', JSON.stringify(certificado));
-    
-    // Mostrar certificado
-    mostrarCertificado(user, certificado);
-    
-    return false;
-}
-
-// ============================================
-// GERAR CERTIFICADO
-// ============================================
-function gerarCertificado(user) {
-    var agora = new Date();
-    var dataHora = agora.toLocaleString('pt-PT', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    
-    // Gerar hash simples
-    var hash = user.id + '-' + user.email + '-' + agora.getTime();
-    hash = btoa(hash).substring(0, 20);
-    
-    return {
-        usuario: user.nome,
-        email: user.email,
-        tipo: user.tipo === 'admin' ? 'Administrador' : 'Cliente',
-        dataHora: dataHora,
-        hash: hash
-    };
-}
-
-// ============================================
-// MOSTRAR CERTIFICADO
-// ============================================
-function mostrarCertificado(user, certificado) {
-    document.getElementById('certUsuario').textContent = certificado.usuario;
-    document.getElementById('certEmail').textContent = certificado.email;
-    document.getElementById('certTipo').textContent = certificado.tipo;
-    document.getElementById('certData').textContent = certificado.dataHora;
-    document.getElementById('certHash').textContent = certificado.hash;
-    
-    var modal = new bootstrap.Modal(document.getElementById('modalCertificado'));
-    modal.show();
-    
-    // Botao continuar
-    document.getElementById('continuarLogin').onclick = function() {
-        modal.hide();
-        redirecionarUsuario(user);
-    };
-    
-    // Fechar com X
-    document.getElementById('fecharCertificado').onclick = function() {
-        modal.hide();
-        redirecionarUsuario(user);
-    };
-}
-
-// ============================================
-// REDIRECIONAR USUARIO
-// ============================================
-function redirecionarUsuario(user) {
-    if (user.tipo === 'admin') {
-        window.location.href = '../admin/dashboard.php';
-    } else {
-        window.location.href = 'perfil-cliente.php';
-    }
-}
-
-// ============================================
 // MOSTRAR/ESCONDER SENHA
+// ============================================
 // ============================================
 function mostrarSenha() {
     var senha = document.getElementById('senhaLogin');
@@ -184,24 +72,13 @@ function recuperarSenha() {
 }
 
 // ============================================
-// VERIFICAR SE ESTA LOGADO
+// UTILIZADOR LOGADO
+// window.usuarioLogado e preenchido pelo PHP nas paginas protegidas
+// (ver views/cliente/perfil-cliente.php). O acesso em si ja e
+// controlado no servidor, isto aqui e so para mostrar os dados na tela.
 // ============================================
 function verificarLogin() {
-    var user = JSON.parse(localStorage.getItem('user'));
-    
-    if (!user) {
-        var paginasProtegidas = ['perfil-cliente.php', 'pedidos.php', 'historico.php', 'acompanhamento.php'];
-        var paginaAtual = window.location.pathname.split('/').pop();
-        
-        for (var i = 0; i < paginasProtegidas.length; i++) {
-            if (paginaAtual === paginasProtegidas[i]) {
-                window.location.href = 'login.php';
-                return null;
-            }
-        }
-    }
-    
-    return user;
+    return window.usuarioLogado || null;
 }
 
 // ============================================
@@ -210,32 +87,20 @@ function verificarLogin() {
 function carregarPerfil() {
     var user = verificarLogin();
     if (!user) return;
-    
+
     var nomeEl = document.getElementById('perfilNome');
     var emailEl = document.getElementById('perfilEmail');
     var avatarEl = document.getElementById('perfilAvatar');
     var telefoneEl = document.getElementById('perfilTelefoneInput');
     var nomeInput = document.getElementById('perfilNomeInput');
     var emailInput = document.getElementById('perfilEmailInput');
-    
+
     if (nomeEl) nomeEl.textContent = user.nome;
     if (emailEl) emailEl.textContent = user.email;
     if (nomeInput) nomeInput.value = user.nome;
     if (emailInput) emailInput.value = user.email;
     if (telefoneEl) telefoneEl.value = user.telefone || 'Nao definido';
     if (avatarEl) avatarEl.textContent = user.nome.charAt(0).toUpperCase();
-    
-    // Mostrar certificado
-    var certificado = JSON.parse(localStorage.getItem('certificado'));
-    var certInfo = document.getElementById('certificadoInfo');
-    if (certificado && certInfo) {
-        certInfo.innerHTML = 
-            '<div class="alert alert-success small">' +
-                '<i class="fas fa-certificate me-2" style="color: #c9a84c;"></i>' +
-                '<strong>Certificado CA:</strong> ' + certificado.hash +
-                '<br><small class="text-muted">Emitido em: ' + certificado.dataHora + '</small>' +
-            '</div>';
-    }
 }
 
 // ============================================
@@ -243,49 +108,8 @@ function carregarPerfil() {
 // ============================================
 function logout() {
     if (confirm('Deseja realmente sair?')) {
-        localStorage.removeItem('user');
-        localStorage.removeItem('certificado');
-        window.location.href = 'login.php';
+        window.location.href = '/index.php?rota=logout';
     }
-}
-
-// ============================================
-// REGISTO DE CLIENTE
-// ============================================
-function registarCliente(event) {
-    event.preventDefault();
-    
-    var nome = document.getElementById('nomeRegisto').value.trim();
-    var email = document.getElementById('emailRegisto').value.trim();
-    var telefone = document.getElementById('telefoneRegisto').value.trim();
-    var senha = document.getElementById('senhaRegisto').value;
-    
-    if (!nome || !email || !telefone || senha.length < 6) {
-        alert('Preencha todos os campos! (senha minimo 6 caracteres)');
-        return false;
-    }
-    
-    // Verificar se email ja existe
-    for (var i = 0; i < usuarios.length; i++) {
-        if (usuarios[i].email === email) {
-            alert('Este email ja esta registado!');
-            return false;
-        }
-    }
-    
-    // Adicionar novo cliente
-    usuarios.push({
-        id: usuarios.length + 1,
-        email: email,
-        senha: senha,
-        tipo: 'cliente',
-        nome: nome,
-        telefone: telefone
-    });
-    
-    alert('Conta criada com sucesso! Faca login para continuar.');
-    window.location.href = 'login.php';
-    return false;
 }
 
 // ============================================

@@ -1,3 +1,13 @@
+<?php
+require_once __DIR__ . '/../../inicializar.php';
+
+if (Sessao::estaLogado()) {
+    header('Location: /views/cliente/perfil-cliente.php');
+    exit;
+}
+
+$flash = Sessao::consumirFlash();
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -32,27 +42,35 @@
                             <p class="text-muted">Junte-se a familia Sabor Alma</p>
                         </div>
 
-                        <form onsubmit="return registarCliente(event)">
+                        <form method="post" action="/index.php?rota=registar">
+                            <?= Csrf::campo() ?>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nome Completo</label>
-                                <input type="text" class="form-control" id="nomeRegisto" placeholder="Seu nome completo" required>
+                                <input type="text" name="nome" class="form-control" id="nomeRegisto" placeholder="Seu nome completo" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Email</label>
-                                <input type="email" class="form-control" id="emailRegisto" placeholder="exemplo@email.com" required>
+                                <input type="email" name="email" class="form-control" id="emailRegisto" placeholder="exemplo@email.com" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Telefone</label>
-                                <input type="tel" class="form-control" id="telefoneRegisto" placeholder="+244 900 000 000" required>
+                                <input type="tel" name="telefone" class="form-control" id="telefoneRegisto" placeholder="+244 900 000 000" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Senha</label>
-                                <input type="password" class="form-control" id="senhaRegisto" placeholder="Minimo 6 caracteres" required minlength="6">
+                                <input type="password" name="senha" class="form-control" id="senhaRegisto" placeholder="Minimo 6 caracteres" required minlength="6">
                             </div>
                             <button type="submit" class="btn w-100 py-2" style="background: #c9a84c; color: #1a3c2a; font-weight: 700;">
                                 <i class="fas fa-user-plus me-2"></i> Criar Conta
                             </button>
                         </form>
+
+                        <?php if ($flash): ?>
+                            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?> mt-3" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <?= htmlspecialchars($flash['mensagem']) ?>
+                            </div>
+                        <?php endif; ?>
 
                         <hr class="my-4">
 

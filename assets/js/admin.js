@@ -1,20 +1,8 @@
 // ============================================
-// ADMIN - VERIFICAR LOGIN
+// ADMIN
+// O acesso a esta area ja e controlado no servidor (ver o topo de
+// cada view em views/admin/), entao aqui nao precisa de verificar login.
 // ============================================
-console.log('Admin.js carregado!');
-
-// Verificar se o usuario esta logado
-var user = JSON.parse(localStorage.getItem('user'));
-
-if (!user) {
-    console.log('Usuario nao logado, redirecionando...');
-    window.location.href = '../cliente/login.php';
-} else if (user.tipo !== 'admin') {
-    console.log('Usuario nao e admin, redirecionando...');
-    window.location.href = '../cliente/login.php';
-} else {
-    console.log('Admin logado:', user.nome);
-}
 
 // ============================================
 // FUNCOES GERAIS
@@ -55,9 +43,7 @@ function fecharSidebar() {
 // SAIR
 function logout() {
     if (confirm('Deseja realmente sair?')) {
-        localStorage.removeItem('user');
-        localStorage.removeItem('certificado');
-        window.location.href = '../cliente/login.php';
+        window.location.href = '/index.php?rota=logout';
     }
 }
 

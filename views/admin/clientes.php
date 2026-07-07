@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . "/../../inicializar.php";
+$utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>

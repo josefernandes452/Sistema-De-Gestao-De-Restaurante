@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . "/../../inicializar.php";
+$utilizadorLogado = Sessao::exigirPerfil("Cliente");
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -64,8 +68,6 @@
 
                         <hr>
 
-                        <div id="certificadoInfo"></div>
-
                         <div class="text-end">
                             <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="logout()">
                                 <i class="fas fa-sign-out-alt me-1"></i> Sair
@@ -78,6 +80,7 @@
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>window.usuarioLogado = <?= json_encode($utilizadorLogado) ?>;</script>
     <script src="../../assets/js/main.js"></script>
 </body>
 </html>
