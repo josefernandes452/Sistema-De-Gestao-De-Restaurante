@@ -18,6 +18,16 @@ Sistema web de gestão de restaurante desenvolvido em **PHP 8** com arquitetura 
 - HTML5 · CSS3 · JavaScript
 - Arquitetura MVC
 
+## ⚠️ Depois de fazeres git pull
+
+O backend já liga a base de dados a sério e manda emails de verdade (recuperação de senha), por isso há passos manuais que o Git não faz sozinho. Sempre que fizeres `git pull` e aparecerem novidades no backend, confirma isto:
+
+1. **Instalar as dependências do Composer.** O projeto passou a usar o PHPMailer para enviar emails. Corre `composer install` na pasta do projeto (ou `php composer.phar install`, se não tiveres o Composer instalado globalmente). Sem isto o site dá erro a carregar o `vendor/autoload.php`.
+2. **Criar o teu `config/config.php`.** Este ficheiro não vai para o GitHub (tem dados sensíveis: senha da base de dados e senha do email). Copia o `config/config.example.php`, renomeia para `config.php`, e preenche com os teus próprios dados: a tua ligação MySQL local e, se quiseres testar a recuperação de senha, uma conta Gmail com "palavra-passe de aplicação" (gera-se em myaccount.google.com/apppasswords).
+3. **Importar a base de dados.** Corre `database/schema.sql` e depois `database/seed.sql` no teu MySQL/phpMyAdmin, se ainda não tiveres as tabelas criadas.
+
+Sem estes 3 passos o site carrega mas nada que dependa da base de dados ou de email vai funcionar.
+
 ## 📁 Estrutura do projeto
 
 ```
