@@ -6,9 +6,11 @@ require_once __DIR__ . '/config/Database.php';
 require_once __DIR__ . '/config/Sessao.php';
 require_once __DIR__ . '/config/Csrf.php';
 require_once __DIR__ . '/config/Validador.php';
+require_once __DIR__ . '/config/Mailer.php';
 require_once __DIR__ . '/models/Model.php';
 require_once __DIR__ . '/models/UsuarioModel.php';
 require_once __DIR__ . '/controllers/Controller.php';
 require_once __DIR__ . '/controllers/AuthController.php';
+require_once __DIR__ . '/controllers/UtilizadorController.php';
 
 Sessao::iniciar();

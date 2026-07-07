@@ -10,4 +10,14 @@ return [
     'utilizador' => 'root',
     'senha' => '',
     'charset' => 'utf8mb4',
+
+    // Para a recuperacao de senha por email (Gmail com "palavra-passe de
+    // aplicacao", gerada em myaccount.google.com/apppasswords).
+    'email' => [
+        'host' => 'smtp.gmail.com',
+        'porta' => 587,
+        'utilizador' => 'o-teu-email@gmail.com',
+        'senha' => 'a-tua-palavra-passe-de-aplicacao',
+        'remetente_nome' => 'Sabor Alma',
+    ],
 ];

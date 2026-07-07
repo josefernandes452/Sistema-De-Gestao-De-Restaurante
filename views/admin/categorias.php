@@ -15,13 +15,6 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
 </head>
 <body>
 
-    <script>
-        var user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.tipo !== 'admin') {
-            window.location.href = '../cliente/login.php';
-        }
-    </script>
-
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
         <div class="logo">

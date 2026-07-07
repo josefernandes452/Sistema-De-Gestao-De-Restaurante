@@ -1,28 +1,5 @@
 // ============================================
-// BANCO DE USUARIOS (SIMULADO)
-// ============================================
-var usuarios = [
-    {
-        id: 1,
-        email: 'cliente@email.com',
-        senha: '123456',
-        tipo: 'cliente',
-        nome: 'Joao Silva',
-        telefone: '923456789'
-    },
-    {
-        id: 2,
-        email: 'admin@saboralma.ao',
-        senha: 'admin123',
-        tipo: 'admin',
-        nome: 'Administrador',
-        telefone: '900000000'
-    }
-];
-
-// ============================================
 // MOSTRAR/ESCONDER SENHA
-// ============================================
 // ============================================
 function mostrarSenha() {
     var senha = document.getElementById('senhaLogin');
@@ -37,38 +14,6 @@ function mostrarSenha() {
         icone.classList.remove('fa-eye-slash');
         icone.classList.add('fa-eye');
     }
-}
-
-// ============================================
-// RECUPERAR SENHA
-// ============================================
-function recuperarSenha() {
-    var email = document.getElementById('emailRecuperar').value.trim();
-    
-    if (!email) {
-        alert('Por favor, digite seu email!');
-        return;
-    }
-    
-    // Verificar se existe
-    var encontrado = false;
-    for (var i = 0; i < usuarios.length; i++) {
-        if (usuarios[i].email === email) {
-            encontrado = true;
-            break;
-        }
-    }
-    
-    if (!encontrado) {
-        alert('Email nao encontrado!');
-        return;
-    }
-    
-    alert('Instrucoes de recuperacao enviadas para: ' + email);
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalRecuperar'));
-    modal.hide();
-    document.getElementById('emailRecuperar').value = '';
 }
 
 // ============================================

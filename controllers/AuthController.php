@@ -81,6 +81,68 @@ class AuthController extends Controller
         $this->redirecionar('/views/cliente/login.php');
     }
 
+    public function recuperarSenha(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Csrf::validar($_POST['csrf_token'] ?? null)) {
+            $this->redirecionar('/views/cliente/login.php');
+        }
+
+        $email = Validador::email($_POST['email'] ?? '');
+        $utilizador = $email ? $this->usuarioModel->buscarPorEmailComPerfil($email) : false;
+
+        if (!$utilizador) {
+            Sessao::flash('erro', 'Nao encontramos nenhuma conta com este email.');
+            $this->redirecionar('/views/cliente/login.php');
+        }
+
+        $token = bin2hex(random_bytes(16));
+        $this->usuarioModel->atualizar($utilizador['id'], ['token_recuperacao' => $token]);
+
+        $link = 'http://' . $_SERVER['HTTP_HOST'] . '/views/cliente/redefinir-senha.php?token=' . $token;
+        $corpo = '<p>Ola ' . htmlspecialchars($utilizador['nome']) . ',</p>'
+            . '<p>Pediste para redefinir a senha da tua conta no Sabor Alma. Clica no link abaixo para escolheres uma nova senha:</p>'
+            . '<p><a href="' . $link . '">' . $link . '</a></p>'
+            . '<p>Se nao foste tu, ignora este email.</p>';
+
+        $enviado = Mailer::enviar($utilizador['email'], $utilizador['nome'], 'Recuperacao de senha - Sabor Alma', $corpo);
+
+        if ($enviado) {
+            Sessao::flash('sucesso', 'Enviamos um email para ' . htmlspecialchars($email) . ' com as instrucoes.');
+        } else {
+            Sessao::flash('erro', 'Nao foi possivel enviar o email agora. Tenta novamente daqui a pouco.');
+        }
+
+        $this->redirecionar('/views/cliente/login.php');
+    }
+
+    public function redefinirSenha(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Csrf::validar($_POST['csrf_token'] ?? null)) {
+            $this->redirecionar('/views/cliente/login.php');
+        }
+
+        $token = $_POST['token'] ?? '';
+        $senha = $_POST['senha'] ?? '';
+        $confirmar = $_POST['confirmar_senha'] ?? '';
+
+        $utilizador = $token ? $this->usuarioModel->buscarPorToken($token) : false;
+
+        if (!$utilizador) {
+            Sessao::flash('erro', 'Este link ja nao e valido. Pede uma nova recuperacao.');
+            $this->redirecionar('/views/cliente/login.php');
+        }
+
+        if (strlen($senha) < 6 || $senha !== $confirmar) {
+            Sessao::flash('erro', 'As senhas tem de ser iguais e ter pelo menos 6 caracteres.');
+            $this->redirecionar('/views/cliente/redefinir-senha.php?token=' . urlencode($token));
+        }
+
+        $this->usuarioModel->atualizarSenha($utilizador['id'], $senha);
+
+        Sessao::flash('sucesso', 'Senha alterada com sucesso. Agora e so entrar.');
+        $this->redirecionar('/views/cliente/login.php');
+    }
+
     public function logout(): void
     {
         Sessao::sair();

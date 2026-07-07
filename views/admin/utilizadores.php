@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$usuarioModel = new UsuarioModel();
+$lista = $usuarioModel->todosComPerfil();
+$perfis = $usuarioModel->todosPerfis();
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -14,13 +19,6 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <link rel="stylesheet" href="../../assets/css/admin.css">
 </head>
 <body>
-
-    <script>
-        var user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.tipo !== 'admin') {
-            window.location.href = '../cliente/login.php';
-        }
-    </script>
 
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
@@ -61,13 +59,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <!-- BARRA DE FERRAMENTAS -->
         <div class="row g-3 mb-4">
@@ -99,11 +103,36 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaUtilizadores"></tbody>
+                    <tbody id="tabelaUtilizadores">
+                        <?php foreach ($lista as $i => $u): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><?= htmlspecialchars($u['nome']) ?></td>
+                                <td><?= htmlspecialchars($u['email']) ?></td>
+                                <td><span class="badge bg-secondary"><?= htmlspecialchars($u['perfil_nome']) ?></span></td>
+                                <td><span class="badge bg-<?= $u['estado'] === 'Ativo' ? 'success' : 'warning' ?>"><?= htmlspecialchars($u['estado']) ?></span></td>
+                                <td><?= htmlspecialchars($u['criado_em']) ?></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                        onclick="editarUtilizador(this)"
+                                        data-id="<?= $u['id'] ?>"
+                                        data-nome="<?= htmlspecialchars($u['nome']) ?>"
+                                        data-email="<?= htmlspecialchars($u['email']) ?>"
+                                        data-perfil="<?= htmlspecialchars($u['perfil_nome']) ?>"
+                                        data-estado="<?= htmlspecialchars($u['estado']) ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarUtilizador(<?= $u['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalUtilizadores">Total: 0 utilizadores</span>
+                <span class="text-muted small" id="totalUtilizadores">Total: <?= count($lista) ?> utilizadores</span>
             </div>
         </div>
 
@@ -114,58 +143,63 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <div class="modal fade" id="modalUtilizador" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalUtilizadorTitulo"><i class="fas fa-user-plus me-2"></i> Novo Utilizador</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formUtilizador">
-                        <input type="hidden" id="utilizadorId">
+                <form id="formUtilizador" method="post" action="/index.php?rota=utilizadores.guardar">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="id" id="utilizadorId">
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title" id="modalUtilizadorTitulo"><i class="fas fa-user-plus me-2"></i> Novo Utilizador</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Nome Completo</label>
-                                <input type="text" class="form-control" id="nomeUtilizador" placeholder="Digite o nome" required>
+                                <input type="text" name="nome" class="form-control" id="nomeUtilizador" placeholder="Digite o nome" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Email</label>
-                                <input type="email" class="form-control" id="emailUtilizador" placeholder="exemplo@email.com" required>
+                                <input type="email" name="email" class="form-control" id="emailUtilizador" placeholder="exemplo@email.com" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Senha</label>
-                                <input type="password" class="form-control" id="senhaUtilizador" placeholder="Minimo 6 caracteres">
+                                <input type="password" name="senha" class="form-control" id="senhaUtilizador" placeholder="Minimo 6 caracteres">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Perfil</label>
-                                <select class="form-select" id="perfilUtilizador" required>
+                                <select class="form-select" name="perfil" id="perfilUtilizador" required>
                                     <option value="">Selecione</option>
-                                    <option value="Administrador">Administrador</option>
-                                    <option value="Gerente">Gerente</option>
-                                    <option value="Funcionario">Funcionario</option>
-                                    <option value="Caixa">Caixa</option>
+                                    <?php foreach ($perfis as $p): ?>
+                                        <option value="<?= htmlspecialchars($p['nome']) ?>"><?= htmlspecialchars($p['nome']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Status</label>
-                            <select class="form-select" id="statusUtilizador">
+                            <select class="form-select" name="estado" id="statusUtilizador">
                                 <option value="Ativo">Ativo</option>
                                 <option value="Inativo">Inativo</option>
-                                <option value="Bloqueado">Bloqueado</option>
                             </select>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarUtilizador()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarUtilizador">Salvar</span>
-                    </button>
-                </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> <span id="btnSalvarUtilizador">Salvar</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    <!-- FORMULARIO ESCONDIDO, USADO SO PARA ELIMINAR -->
+    <form id="formEliminarUtilizador" method="post" action="/index.php?rota=utilizadores.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarUtilizadorId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>

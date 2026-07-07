@@ -95,18 +95,21 @@ $flash = Sessao::consumirFlash();
     <div class="modal fade" id="modalRecuperar" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title">Recuperar Senha</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Digite seu email para receber as instruções:</p>
-                    <input type="email" class="form-control" id="emailRecuperar" placeholder="exemplo@email.com">
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="recuperarSenha()">Enviar</button>
-                </div>
+                <form method="post" action="/index.php?rota=recuperar-senha">
+                    <?= Csrf::campo() ?>
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title">Recuperar Senha</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Digite seu email para receber as instruções:</p>
+                        <input type="email" name="email" class="form-control" id="emailRecuperar" placeholder="exemplo@email.com" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">Enviar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -50,14 +50,6 @@ function logout() {
 // ============================================
 // DADOS FICTICIOS
 // ============================================
-var utilizadores = [
-    { id: 1, nome: 'Administrador Sistema', email: 'admin@saboralma.ao', perfil: 'Administrador', status: 'Ativo', dataCriacao: '2026-01-01 10:00' },
-    { id: 2, nome: 'Joao Silva', email: 'joao@restaurante.com', perfil: 'Gerente', status: 'Ativo', dataCriacao: '2026-01-15 14:30' },
-    { id: 3, nome: 'Maria Santos', email: 'maria@restaurante.com', perfil: 'Funcionario', status: 'Ativo', dataCriacao: '2026-02-20 09:15' },
-    { id: 4, nome: 'Pedro Costa', email: 'pedro@restaurante.com', perfil: 'Caixa', status: 'Inativo', dataCriacao: '2026-03-10 16:45' }
-];
-var proximoIdUtilizador = 5;
-
 var categorias = [
     { id: 1, nome: 'Bebidas', descricao: 'Refrigerantes, sucos, cervejas', status: 'Ativo', produtos: 12 },
     { id: 2, nome: 'Entradas', descricao: 'Aperitivos e entradas', status: 'Ativo', produtos: 8 },
@@ -108,153 +100,55 @@ var proximoIdPagamento = 5;
 
 // ============================================
 // UTILIZADORES - CRUD
+// A tabela ja vem pronta do servidor (ver views/admin/utilizadores.php).
+// Este JS so cuida do modal: abrir, preencher ao editar, e o filtro de
+// pesquisa. Guardar e eliminar sao formularios normais que submetem
+// para o servidor a serio.
 // ============================================
-function carregarUtilizadores() {
-    var tbody = document.getElementById('tabelaUtilizadores');
-    var total = document.getElementById('totalUtilizadores');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < utilizadores.length; i++) {
-        var user = utilizadores[i];
-        var statusClass = user.status === 'Ativo' ? 'success' : user.status === 'Inativo' ? 'warning' : 'danger';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + user.nome + '</td>' +
-            '<td>' + user.email + '</td>' +
-            '<td><span class="badge bg-secondary">' + user.perfil + '</span></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + user.status + '</span></td>' +
-            '<td>' + user.dataCriacao + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarUtilizador(' + user.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarUtilizador(' + user.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + utilizadores.length + ' utilizadores';
-}
-
 function abrirModalUtilizador() {
     document.getElementById('utilizadorId').value = '';
     document.getElementById('modalUtilizadorTitulo').innerHTML = '<i class="fas fa-user-plus me-2"></i> Novo Utilizador';
     document.getElementById('btnSalvarUtilizador').textContent = 'Salvar';
     document.getElementById('formUtilizador').reset();
+    document.getElementById('senhaUtilizador').placeholder = 'Minimo 6 caracteres';
     var modal = new bootstrap.Modal(document.getElementById('modalUtilizador'));
     modal.show();
 }
 
-function editarUtilizador(id) {
-    var user = null;
-    for (var i = 0; i < utilizadores.length; i++) {
-        if (utilizadores[i].id === id) {
-            user = utilizadores[i];
-            break;
-        }
-    }
-    if (!user) return;
-    
-    document.getElementById('utilizadorId').value = user.id;
+function editarUtilizador(botao) {
+    document.getElementById('utilizadorId').value = botao.dataset.id;
     document.getElementById('modalUtilizadorTitulo').innerHTML = '<i class="fas fa-user-edit me-2"></i> Editar Utilizador';
     document.getElementById('btnSalvarUtilizador').textContent = 'Atualizar';
-    document.getElementById('nomeUtilizador').value = user.nome;
-    document.getElementById('emailUtilizador').value = user.email;
-    document.getElementById('perfilUtilizador').value = user.perfil;
-    document.getElementById('statusUtilizador').value = user.status;
+    document.getElementById('nomeUtilizador').value = botao.dataset.nome;
+    document.getElementById('emailUtilizador').value = botao.dataset.email;
+    document.getElementById('perfilUtilizador').value = botao.dataset.perfil;
+    document.getElementById('statusUtilizador').value = botao.dataset.estado;
+    document.getElementById('senhaUtilizador').value = '';
+    document.getElementById('senhaUtilizador').placeholder = 'Deixa em branco para manter a senha atual';
     var modal = new bootstrap.Modal(document.getElementById('modalUtilizador'));
     modal.show();
-}
-
-function salvarUtilizador() {
-    var id = document.getElementById('utilizadorId').value;
-    var nome = document.getElementById('nomeUtilizador').value.trim();
-    var email = document.getElementById('emailUtilizador').value.trim();
-    var perfil = document.getElementById('perfilUtilizador').value;
-    var status = document.getElementById('statusUtilizador').value;
-    
-    if (!nome || !email || !perfil) {
-        alert('Preencha todos os campos obrigatorios!');
-        return;
-    }
-    
-    var agora = new Date().toLocaleString('pt-PT', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-    }).replace(/\//g, '-');
-    
-    if (id) {
-        for (var i = 0; i < utilizadores.length; i++) {
-            if (utilizadores[i].id === parseInt(id)) {
-                utilizadores[i].nome = nome;
-                utilizadores[i].email = email;
-                utilizadores[i].perfil = perfil;
-                utilizadores[i].status = status;
-                break;
-            }
-        }
-    } else {
-        utilizadores.push({
-            id: proximoIdUtilizador++,
-            nome: nome,
-            email: email,
-            perfil: perfil,
-            status: status,
-            dataCriacao: agora
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalUtilizador'));
-    modal.hide();
-    carregarUtilizadores();
-    alert(id ? 'Utilizador atualizado com sucesso!' : 'Utilizador criado com sucesso!');
 }
 
 function eliminarUtilizador(id) {
     if (confirm('Tem certeza que deseja eliminar este utilizador?')) {
-        var novoArray = [];
-        for (var i = 0; i < utilizadores.length; i++) {
-            if (utilizadores[i].id !== id) {
-                novoArray.push(utilizadores[i]);
-            }
-        }
-        utilizadores = novoArray;
-        carregarUtilizadores();
-        alert('Utilizador eliminado com sucesso!');
+        document.getElementById('eliminarUtilizadorId').value = id;
+        document.getElementById('formEliminarUtilizador').submit();
     }
 }
 
 function filtrarUtilizadores() {
     var termo = document.getElementById('pesquisaUtilizador').value.toLowerCase();
-    var tbody = document.getElementById('tabelaUtilizadores');
+    var linhas = document.querySelectorAll('#tabelaUtilizadores tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalUtilizadores');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < utilizadores.length; i++) {
-        if (utilizadores[i].nome.toLowerCase().includes(termo) || utilizadores[i].email.toLowerCase().includes(termo)) {
-            filtrados.push(utilizadores[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var user = filtrados[i];
-        var statusClass = user.status === 'Ativo' ? 'success' : user.status === 'Inativo' ? 'warning' : 'danger';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + user.nome + '</td>' +
-            '<td>' + user.email + '</td>' +
-            '<td><span class="badge bg-secondary">' + user.perfil + '</span></td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + user.status + '</span></td>' +
-            '<td>' + user.dataCriacao + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarUtilizador(' + user.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarUtilizador(' + user.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' utilizadores (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' utilizadores';
 }
 
 // ============================================
@@ -1237,9 +1131,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Carregar dados conforme a pagina
     switch(page) {
-        case 'utilizadores.php':
-            if (typeof carregarUtilizadores === 'function') carregarUtilizadores();
-            break;
         case 'categorias.php':
             if (typeof carregarCategorias === 'function') carregarCategorias();
             break;

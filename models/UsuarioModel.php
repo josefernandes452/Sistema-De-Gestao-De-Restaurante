@@ -29,10 +29,18 @@ class UsuarioModel extends Model
         return $stmt->fetch() !== false;
     }
 
+    public function idDoPerfil(string $nomePerfil): ?int
+    {
+        $stmt = $this->pdo->prepare('SELECT id FROM perfis WHERE nome = ?');
+        $stmt->execute([$nomePerfil]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
+    }
+
     public function idDoPerfilCliente(): int
     {
-        $stmt = $this->pdo->query("SELECT id FROM perfis WHERE nome = 'Cliente'");
-        return (int) $stmt->fetchColumn();
+        return $this->idDoPerfil('Cliente');
     }
 
     public function atualizarSenha(int $id, string $novaSenha): bool
@@ -41,5 +49,29 @@ class UsuarioModel extends Model
             'senha' => password_hash($novaSenha, PASSWORD_DEFAULT),
             'token_recuperacao' => null,
         ]);
+    }
+
+    public function buscarPorToken(string $token): array|false
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM utilizadores WHERE token_recuperacao = ?');
+        $stmt->execute([$token]);
+
+        return $stmt->fetch();
+    }
+
+    // Lista para a tela de gestao de utilizadores, ja com o nome do perfil.
+    public function todosComPerfil(): array
+    {
+        $sql = 'SELECT u.*, p.nome AS perfil_nome
+                FROM utilizadores u
+                JOIN perfis p ON p.id = u.perfil_id
+                ORDER BY u.nome';
+
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
+    public function todosPerfis(): array
+    {
+        return $this->pdo->query('SELECT id, nome FROM perfis ORDER BY id')->fetchAll();
     }
 }

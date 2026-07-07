@@ -15,8 +15,24 @@ switch ($rota) {
         (new AuthController())->registar();
         break;
 
+    case 'recuperar-senha':
+        (new AuthController())->recuperarSenha();
+        break;
+
+    case 'redefinir-senha':
+        (new AuthController())->redefinirSenha();
+        break;
+
     case 'logout':
         (new AuthController())->logout();
+        break;
+
+    case 'utilizadores.guardar':
+        (new UtilizadorController())->guardar();
+        break;
+
+    case 'utilizadores.eliminar':
+        (new UtilizadorController())->eliminar();
         break;
 
     default:
