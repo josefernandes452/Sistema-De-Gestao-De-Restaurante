@@ -6,6 +6,18 @@ class Sessao
     public static function iniciar(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            // HttpOnly tira o cookie de sessao do alcance do JavaScript
+            // (mesmo que algum dia escape um XSS por ali, o cookie fica
+            // protegido). SameSite=Lax ajuda contra CSRF vindo de outros
+            // sites. O "secure" fica de fora porque em desenvolvimento
+            // corremos em HTTP simples, mas devia ligar-se numa hospedagem
+            // a serio com HTTPS.
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
             session_start();
         }
     }

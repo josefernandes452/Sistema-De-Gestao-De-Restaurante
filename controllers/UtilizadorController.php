@@ -9,7 +9,10 @@ class UtilizadorController extends Controller
 
     public function __construct()
     {
-        Sessao::exigirPerfil('Administrador', 'Operador');
+        // So o Administrador gere utilizadores. Um Operador com acesso
+        // a isto conseguia criar-se a ele proprio como Administrador,
+        // o que seria uma forma facil de subir de privilegio sozinho.
+        Sessao::exigirPerfil('Administrador');
         $this->usuarioModel = new UsuarioModel();
     }
 

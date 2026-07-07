@@ -346,7 +346,7 @@ function renderizarCarrinhoPedido() {
 
         var linha = document.createElement('tr');
         linha.innerHTML =
-            '<td>' + item.nome + '</td>' +
+            '<td>' + escaparHtml(item.nome) + '</td>' +
             '<td>' + item.quantidade + '</td>' +
             '<td>Kz ' + subtotal.toFixed(2) + '</td>' +
             '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="removerItemPedido(' + indice + ')"><i class="fas fa-times"></i></button></td>';
@@ -360,6 +360,16 @@ function renderizarCarrinhoPedido() {
     document.getElementById('totalCarrinhoPedido').textContent = 'Kz ' + total.toFixed(2);
 }
 
+// Nome de produto, nome de cliente e observacoes sao texto livre
+// escrito por um utilizador, entao antes de meter isso dentro de
+// innerHTML tem de se escapar, senao um nome tipo "<img onerror=...>"
+// executava assim que alguem abrisse os detalhes do pedido.
+function escaparHtml(texto) {
+    var div = document.createElement('div');
+    div.textContent = texto == null ? '' : String(texto);
+    return div.innerHTML;
+}
+
 function verPedido(botao) {
     var ped = JSON.parse(botao.dataset.pedido);
     var detalhes = document.getElementById('detalhesPedido');
@@ -368,7 +378,7 @@ function verPedido(botao) {
     ped.itens.forEach(function (item) {
         linhasItens +=
             '<li class="d-flex justify-content-between border-bottom py-2">' +
-                '<span>' + item.produto_nome + '</span>' +
+                '<span>' + escaparHtml(item.produto_nome) + '</span>' +
                 '<span>' + item.quantidade + ' x Kz ' + parseFloat(item.preco_unitario).toFixed(2) + '</span>' +
             '</li>';
     });
@@ -376,14 +386,14 @@ function verPedido(botao) {
     detalhes.innerHTML =
         '<div class="row">' +
             '<div class="col-md-6">' +
-                '<p><strong>Cliente:</strong> ' + (ped.cliente_nome || 'Cliente avulso') + '</p>' +
+                '<p><strong>Cliente:</strong> ' + escaparHtml(ped.cliente_nome || 'Cliente avulso') + '</p>' +
                 '<p><strong>Mesa:</strong> Mesa ' + ped.mesa_numero + '</p>' +
                 '<p><strong>Data:</strong> ' + ped.criado_em + '</p>' +
             '</div>' +
             '<div class="col-md-6">' +
                 '<p><strong>Total:</strong> Kz ' + parseFloat(ped.total).toFixed(2) + '</p>' +
                 '<p><strong>Status:</strong> ' + ped.estado + '</p>' +
-                (ped.observacoes ? '<p><strong>Observacoes:</strong> ' + ped.observacoes + '</p>' : '') +
+                (ped.observacoes ? '<p><strong>Observacoes:</strong> ' + escaparHtml(ped.observacoes) + '</p>' : '') +
             '</div>' +
         '</div>' +
         '<hr>' +

@@ -26,6 +26,7 @@ CREATE TABLE utilizadores (
     telefone VARCHAR(20),
     estado ENUM('Ativo', 'Inativo') NOT NULL DEFAULT 'Ativo',
     token_recuperacao VARCHAR(100),
+    token_recuperacao_expira DATETIME,
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (perfil_id) REFERENCES perfis(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;

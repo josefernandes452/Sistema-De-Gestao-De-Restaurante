@@ -48,12 +48,27 @@ class UsuarioModel extends Model
         return $this->atualizar($id, [
             'senha' => password_hash($novaSenha, PASSWORD_DEFAULT),
             'token_recuperacao' => null,
+            'token_recuperacao_expira' => null,
         ]);
     }
 
+    public function definirTokenRecuperacao(int $id, string $token): bool
+    {
+        return $this->atualizar($id, [
+            'token_recuperacao' => $token,
+            // 1 hora de validade. Depois disso o link do email deixa de funcionar.
+            'token_recuperacao_expira' => date('Y-m-d H:i:s', time() + 3600),
+        ]);
+    }
+
+    // So devolve o utilizador se o token existir e ainda nao tiver expirado.
     public function buscarPorToken(string $token): array|false
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM utilizadores WHERE token_recuperacao = ?');
+        $sql = 'SELECT * FROM utilizadores
+                WHERE token_recuperacao = ?
+                AND token_recuperacao_expira > NOW()';
+
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$token]);
 
         return $stmt->fetch();

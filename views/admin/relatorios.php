@@ -63,7 +63,7 @@ $totalVendidoPeriodo = array_sum(array_column($vendasPorPeriodo, 'total_vendido'
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
+                <div class="avatar"><?= htmlspecialchars(strtoupper(substr($utilizadorLogado['nome'], 0, 1))) ?></div>
                 <div class="d-none d-sm-block">
                     <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
                     <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>

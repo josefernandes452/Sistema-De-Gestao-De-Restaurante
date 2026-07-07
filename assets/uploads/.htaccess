@@ -1,0 +1,9 @@
+# Camada extra: mesmo que algum dia um ficheiro executavel pare
+# aqui dentro por engano, o Apache recusa-se a correr como PHP.
+# So faz sentido numa hospedagem real com Apache (o servidor de
+# desenvolvimento do PHP nao le ficheiros .htaccess).
+php_flag engine off
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|phar)$">
+    Require all denied
+</FilesMatch>

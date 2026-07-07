@@ -105,13 +105,13 @@ class AuthController extends Controller
         }
 
         $token = bin2hex(random_bytes(16));
-        $this->usuarioModel->atualizar($utilizador['id'], ['token_recuperacao' => $token]);
+        $this->usuarioModel->definirTokenRecuperacao($utilizador['id'], $token);
 
         $link = 'http://' . $_SERVER['HTTP_HOST'] . '/views/cliente/redefinir-senha.php?token=' . $token;
         $corpo = '<p>Ola ' . htmlspecialchars($utilizador['nome']) . ',</p>'
             . '<p>Pediste para redefinir a senha da tua conta no Sabor Alma. Clica no link abaixo para escolheres uma nova senha:</p>'
             . '<p><a href="' . $link . '">' . $link . '</a></p>'
-            . '<p>Se nao foste tu, ignora este email.</p>';
+            . '<p>Este link e valido por 1 hora. Se nao foste tu, ignora este email.</p>';
 
         $enviado = Mailer::enviar($utilizador['email'], $utilizador['nome'], 'Recuperacao de senha - Sabor Alma', $corpo);
 

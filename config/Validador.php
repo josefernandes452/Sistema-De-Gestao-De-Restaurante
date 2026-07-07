@@ -4,9 +4,14 @@
 // de confiar direto no que vem em $_POST.
 class Validador
 {
+    // So limpa espacos, nao escapa HTML aqui. O escape fica para a
+    // hora de mostrar o texto na view (htmlspecialchars), que e onde
+    // isso realmente importa. Escapar aqui tambem guardava o texto
+    // ja convertido na base de dados, e ao mostrar de novo com
+    // htmlspecialchars ficava escapado 2 vezes (um "&" virava "&amp;amp;").
     public static function texto(?string $valor): string
     {
-        return htmlspecialchars(trim($valor ?? ''), ENT_QUOTES, 'UTF-8');
+        return trim($valor ?? '');
     }
 
     public static function email(?string $valor): string|false

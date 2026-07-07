@@ -5,6 +5,7 @@
 # Uploads de utilizadores (manter a pasta, ignorar o conteúdo)
 /assets/uploads/*
 !/assets/uploads/.gitkeep
+!/assets/uploads/.htaccess
 
 # Dependências
 /vendor/
@@ -17,3 +18,4 @@ composer.phar
 
 # Cache da API de cambio (gerado automaticamente)
 /assets/cache/*.json
+/assets/cache/*.log
