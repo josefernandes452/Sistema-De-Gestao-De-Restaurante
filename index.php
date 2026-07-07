@@ -35,6 +35,22 @@ switch ($rota) {
         (new UtilizadorController())->eliminar();
         break;
 
+    case 'categorias.guardar':
+        (new CategoriaController())->guardar();
+        break;
+
+    case 'categorias.eliminar':
+        (new CategoriaController())->eliminar();
+        break;
+
+    case 'produtos.guardar':
+        (new ProdutoController())->guardar();
+        break;
+
+    case 'produtos.eliminar':
+        (new ProdutoController())->eliminar();
+        break;
+
     default:
         header('Location: /views/cliente/index.php');
         exit;

@@ -50,22 +50,6 @@ function logout() {
 // ============================================
 // DADOS FICTICIOS
 // ============================================
-var categorias = [
-    { id: 1, nome: 'Bebidas', descricao: 'Refrigerantes, sucos, cervejas', status: 'Ativo', produtos: 12 },
-    { id: 2, nome: 'Entradas', descricao: 'Aperitivos e entradas', status: 'Ativo', produtos: 8 },
-    { id: 3, nome: 'Pratos Principais', descricao: 'Pratos principais do menu', status: 'Ativo', produtos: 15 },
-    { id: 4, nome: 'Sobremesas', descricao: 'Doces e sobremesas', status: 'Ativo', produtos: 6 }
-];
-var proximoIdCategoria = 5;
-
-var produtos = [
-    { id: 1, nome: 'Bife a Casa', categoria: 'Pratos Principais', preco: 2500, stock: 15, status: 'Disponivel' },
-    { id: 2, nome: 'Frango Grelhado', categoria: 'Pratos Principais', preco: 1800, stock: 10, status: 'Disponivel' },
-    { id: 3, nome: 'Salada Mista', categoria: 'Entradas', preco: 800, stock: 20, status: 'Disponivel' },
-    { id: 4, nome: 'Refrigerante', categoria: 'Bebidas', preco: 300, stock: 50, status: 'Disponivel' }
-];
-var proximoIdProduto = 5;
-
 var mesas = [
     { id: 1, numero: 1, capacidade: 4, localizacao: 'Salao Principal', status: 'Livre', ocupadoPor: '-' },
     { id: 2, numero: 2, capacidade: 2, localizacao: 'Salao Principal', status: 'Ocupada', ocupadoPor: 'Joao Silva' },
@@ -153,32 +137,9 @@ function filtrarUtilizadores() {
 
 // ============================================
 // CATEGORIAS - CRUD
+// Mesmo esquema das Utilizadores: a tabela vem pronta do servidor,
+// o JS so trata do modal e do filtro.
 // ============================================
-function carregarCategorias() {
-    var tbody = document.getElementById('tabelaCategorias');
-    var total = document.getElementById('totalCategorias');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < categorias.length; i++) {
-        var cat = categorias[i];
-        var statusClass = cat.status === 'Ativo' ? 'success' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td><i class="fas fa-tag" style="color: #c9a84c;"></i> ' + cat.nome + '</td>' +
-            '<td>' + (cat.descricao || '-') + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + cat.status + '</span></td>' +
-            '<td>' + cat.produtos + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarCategoria(' + cat.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarCategoria(' + cat.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + categorias.length + ' categorias';
-}
-
 function abrirModalCategoria() {
     document.getElementById('categoriaId').value = '';
     document.getElementById('modalCategoriaTitulo').innerHTML = '<i class="fas fa-tag me-2"></i> Nova Categoria';
@@ -188,257 +149,104 @@ function abrirModalCategoria() {
     modal.show();
 }
 
-function editarCategoria(id) {
-    var cat = null;
-    for (var i = 0; i < categorias.length; i++) {
-        if (categorias[i].id === id) {
-            cat = categorias[i];
-            break;
-        }
-    }
-    if (!cat) return;
-    
-    document.getElementById('categoriaId').value = cat.id;
+function editarCategoria(botao) {
+    document.getElementById('categoriaId').value = botao.dataset.id;
     document.getElementById('modalCategoriaTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Categoria';
     document.getElementById('btnSalvarCategoria').textContent = 'Atualizar';
-    document.getElementById('nomeCategoria').value = cat.nome;
-    document.getElementById('descricaoCategoria').value = cat.descricao;
-    document.getElementById('statusCategoria').value = cat.status;
+    document.getElementById('nomeCategoria').value = botao.dataset.nome;
+    document.getElementById('descricaoCategoria').value = botao.dataset.descricao;
+    document.getElementById('statusCategoria').value = botao.dataset.estado;
     var modal = new bootstrap.Modal(document.getElementById('modalCategoria'));
     modal.show();
 }
 
-function salvarCategoria() {
-    var id = document.getElementById('categoriaId').value;
-    var nome = document.getElementById('nomeCategoria').value.trim();
-    var descricao = document.getElementById('descricaoCategoria').value.trim();
-    var status = document.getElementById('statusCategoria').value;
-    
-    if (!nome) {
-        alert('Preencha o nome da categoria!');
-        return;
-    }
-    
-    if (id) {
-        for (var i = 0; i < categorias.length; i++) {
-            if (categorias[i].id === parseInt(id)) {
-                categorias[i].nome = nome;
-                categorias[i].descricao = descricao;
-                categorias[i].status = status;
-                break;
-            }
-        }
-    } else {
-        categorias.push({
-            id: proximoIdCategoria++,
-            nome: nome,
-            descricao: descricao,
-            status: status,
-            produtos: 0
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalCategoria'));
-    modal.hide();
-    carregarCategorias();
-    alert(id ? 'Categoria atualizada com sucesso!' : 'Categoria criada com sucesso!');
-}
-
 function eliminarCategoria(id) {
     if (confirm('Tem certeza que deseja eliminar esta categoria?')) {
-        var novoArray = [];
-        for (var i = 0; i < categorias.length; i++) {
-            if (categorias[i].id !== id) {
-                novoArray.push(categorias[i]);
-            }
-        }
-        categorias = novoArray;
-        carregarCategorias();
-        alert('Categoria eliminada com sucesso!');
+        document.getElementById('eliminarCategoriaId').value = id;
+        document.getElementById('formEliminarCategoria').submit();
     }
 }
 
 function filtrarCategorias() {
     var termo = document.getElementById('pesquisaCategoria').value.toLowerCase();
-    var tbody = document.getElementById('tabelaCategorias');
+    var linhas = document.querySelectorAll('#tabelaCategorias tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalCategorias');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < categorias.length; i++) {
-        if (categorias[i].nome.toLowerCase().includes(termo)) {
-            filtrados.push(categorias[i]);
-        }
-    }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var cat = filtrados[i];
-        var statusClass = cat.status === 'Ativo' ? 'success' : 'secondary';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + cat.nome + '</td>' +
-            '<td>' + (cat.descricao || '-') + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + cat.status + '</span></td>' +
-            '<td>' + cat.produtos + '</td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarCategoria(' + cat.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarCategoria(' + cat.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' categorias (filtrados)';
+    if (total) total.textContent = 'Total: ' + visiveis + ' categorias';
 }
 
 // ============================================
 // PRODUTOS - CRUD
 // ============================================
-function carregarProdutos() {
-    var tbody = document.getElementById('tabelaProdutos');
-    var total = document.getElementById('totalProdutos');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < produtos.length; i++) {
-        var prod = produtos[i];
-        var statusClass = prod.status === 'Disponivel' ? 'success' : prod.status === 'Esgotado' ? 'danger' : 'warning';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td><div style="width: 40px; height: 40px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-utensils text-muted"></i></div></td>' +
-            '<td>' + prod.nome + '</td>' +
-            '<td><span class="badge bg-secondary">' + prod.categoria + '</span></td>' +
-            '<td><strong>Kz ' + prod.preco.toFixed(2) + '</strong></td>' +
-            '<td>' + prod.stock + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + prod.status + '</span></td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarProduto(' + prod.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarProduto(' + prod.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + produtos.length + ' produtos';
-}
-
 function abrirModalProduto() {
     document.getElementById('produtoId').value = '';
     document.getElementById('modalProdutoTitulo').innerHTML = '<i class="fas fa-box me-2"></i> Novo Produto';
     document.getElementById('btnSalvarProduto').textContent = 'Salvar';
     document.getElementById('formProduto').reset();
+    document.getElementById('previaImagemProduto').style.display = 'none';
     var modal = new bootstrap.Modal(document.getElementById('modalProduto'));
     modal.show();
 }
 
-function editarProduto(id) {
-    var prod = null;
-    for (var i = 0; i < produtos.length; i++) {
-        if (produtos[i].id === id) {
-            prod = produtos[i];
-            break;
-        }
-    }
-    if (!prod) return;
-    
-    document.getElementById('produtoId').value = prod.id;
+function editarProduto(botao) {
+    document.getElementById('produtoId').value = botao.dataset.id;
     document.getElementById('modalProdutoTitulo').innerHTML = '<i class="fas fa-edit me-2"></i> Editar Produto';
     document.getElementById('btnSalvarProduto').textContent = 'Atualizar';
-    document.getElementById('nomeProduto').value = prod.nome;
-    document.getElementById('categoriaProduto').value = prod.categoria;
-    document.getElementById('precoProduto').value = prod.preco;
-    document.getElementById('stockProduto').value = prod.stock;
-    document.getElementById('statusProduto').value = prod.status;
+    document.getElementById('nomeProduto').value = botao.dataset.nome;
+    document.getElementById('categoriaProduto').value = botao.dataset.categoriaId;
+    document.getElementById('descricaoProduto').value = botao.dataset.descricao;
+    document.getElementById('precoProduto').value = botao.dataset.preco;
+    document.getElementById('stockProduto').value = botao.dataset.estoque;
+    document.getElementById('statusProduto').value = botao.dataset.estado;
+    document.getElementById('imagemProduto').value = '';
+    document.getElementById('previaImagemProduto').style.display = 'none';
     var modal = new bootstrap.Modal(document.getElementById('modalProduto'));
     modal.show();
-}
-
-function salvarProduto() {
-    var id = document.getElementById('produtoId').value;
-    var nome = document.getElementById('nomeProduto').value.trim();
-    var categoria = document.getElementById('categoriaProduto').value;
-    var preco = parseFloat(document.getElementById('precoProduto').value);
-    var stock = parseInt(document.getElementById('stockProduto').value);
-    var status = document.getElementById('statusProduto').value;
-    
-    if (!nome || !categoria || isNaN(preco) || isNaN(stock)) {
-        alert('Preencha todos os campos obrigatorios!');
-        return;
-    }
-    
-    if (id) {
-        for (var i = 0; i < produtos.length; i++) {
-            if (produtos[i].id === parseInt(id)) {
-                produtos[i].nome = nome;
-                produtos[i].categoria = categoria;
-                produtos[i].preco = preco;
-                produtos[i].stock = stock;
-                produtos[i].status = status;
-                break;
-            }
-        }
-    } else {
-        produtos.push({
-            id: proximoIdProduto++,
-            nome: nome,
-            categoria: categoria,
-            preco: preco,
-            stock: stock,
-            status: status
-        });
-    }
-    
-    var modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
-    modal.hide();
-    carregarProdutos();
-    alert(id ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!');
 }
 
 function eliminarProduto(id) {
     if (confirm('Tem certeza que deseja eliminar este produto?')) {
-        var novoArray = [];
-        for (var i = 0; i < produtos.length; i++) {
-            if (produtos[i].id !== id) {
-                novoArray.push(produtos[i]);
-            }
-        }
-        produtos = novoArray;
-        carregarProdutos();
-        alert('Produto eliminado com sucesso!');
+        document.getElementById('eliminarProdutoId').value = id;
+        document.getElementById('formEliminarProduto').submit();
     }
 }
 
 function filtrarProdutos() {
     var termo = document.getElementById('pesquisaProduto').value.toLowerCase();
-    var tbody = document.getElementById('tabelaProdutos');
+    var linhas = document.querySelectorAll('#tabelaProdutos tr');
+    var visiveis = 0;
+
+    linhas.forEach(function (linha) {
+        var mostra = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+        linha.style.display = mostra ? '' : 'none';
+        if (mostra) visiveis++;
+    });
+
     var total = document.getElementById('totalProdutos');
-    if (!tbody) return;
-    
-    var filtrados = [];
-    for (var i = 0; i < produtos.length; i++) {
-        if (produtos[i].nome.toLowerCase().includes(termo) || produtos[i].categoria.toLowerCase().includes(termo)) {
-            filtrados.push(produtos[i]);
-        }
+    if (total) total.textContent = 'Total: ' + visiveis + ' produtos';
+}
+
+// Mostra uma previa da imagem escolhida antes de guardar o produto.
+function preVisualizarImagem(input) {
+    var previa = document.getElementById('previaImagemProduto');
+    if (!input.files || !input.files[0]) {
+        previa.style.display = 'none';
+        return;
     }
-    
-    tbody.innerHTML = '';
-    for (var i = 0; i < filtrados.length; i++) {
-        var prod = filtrados[i];
-        var statusClass = prod.status === 'Disponivel' ? 'success' : prod.status === 'Esgotado' ? 'danger' : 'warning';
-        var tr = document.createElement('tr');
-        tr.innerHTML = 
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' + prod.nome + '</td>' +
-            '<td><span class="badge bg-secondary">' + prod.categoria + '</span></td>' +
-            '<td><strong>Kz ' + prod.preco.toFixed(2) + '</strong></td>' +
-            '<td>' + prod.stock + '</td>' +
-            '<td><span class="badge bg-' + statusClass + '">' + prod.status + '</span></td>' +
-            '<td class="text-center">' +
-                '<button class="btn btn-sm btn-outline-success me-1" onclick="editarProduto(' + prod.id + ')"><i class="fas fa-edit"></i></button>' +
-                '<button class="btn btn-sm btn-outline-danger" onclick="eliminarProduto(' + prod.id + ')"><i class="fas fa-trash"></i></button>' +
-            '</td>';
-        tbody.appendChild(tr);
-    }
-    if (total) total.textContent = 'Total: ' + filtrados.length + ' produtos (filtrados)';
+
+    var leitor = new FileReader();
+    leitor.onload = function (e) {
+        previa.src = e.target.result;
+        previa.style.display = 'inline-block';
+    };
+    leitor.readAsDataURL(input.files[0]);
 }
 
 // ============================================
@@ -1131,12 +939,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Carregar dados conforme a pagina
     switch(page) {
-        case 'categorias.php':
-            if (typeof carregarCategorias === 'function') carregarCategorias();
-            break;
-        case 'produtos.php':
-            if (typeof carregarProdutos === 'function') carregarProdutos();
-            break;
         case 'mesas.php':
             if (typeof carregarMesas === 'function') carregarMesas();
             break;

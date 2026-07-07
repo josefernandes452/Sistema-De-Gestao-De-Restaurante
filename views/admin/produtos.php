@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+
+$produtoModel = new ProdutoModel();
+$categoriaModel = new CategoriaModel();
+$lista = $produtoModel->todosComCategoria();
+$categorias = $categoriaModel->todos();
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -52,13 +58,19 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
-                <div class="avatar">A</div>
+                <div class="avatar"><?= strtoupper(substr($utilizadorLogado['nome'], 0, 1)) ?></div>
                 <div class="d-none d-sm-block">
-                    <div class="fw-semibold small">Administrador</div>
-                    <div class="text-muted small">admin@saboralma.ao</div>
+                    <div class="fw-semibold small"><?= htmlspecialchars($utilizadorLogado['nome']) ?></div>
+                    <div class="text-muted small"><?= htmlspecialchars($utilizadorLogado['email']) ?></div>
                 </div>
             </div>
         </div>
+
+        <?php if ($flash): ?>
+            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                <?= htmlspecialchars($flash['mensagem']) ?>
+            </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6">
@@ -89,11 +101,45 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
                             <th class="text-center">Acoes</th>
                         </tr>
                     </thead>
-                    <tbody id="tabelaProdutos"></tbody>
+                    <tbody id="tabelaProdutos">
+                        <?php foreach ($lista as $i => $p): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td>
+                                    <?php if ($p['imagem']): ?>
+                                        <img src="../../assets/uploads/<?= htmlspecialchars($p['imagem']) ?>" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">
+                                    <?php else: ?>
+                                        <div style="width: 40px; height: 40px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-utensils text-muted"></i></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($p['nome']) ?></td>
+                                <td><span class="badge bg-secondary"><?= htmlspecialchars($p['categoria_nome']) ?></span></td>
+                                <td><strong>Kz <?= number_format((float) $p['preco'], 2) ?></strong></td>
+                                <td><?= (int) $p['estoque'] ?></td>
+                                <td><span class="badge bg-<?= $p['estado'] === 'Disponivel' ? 'success' : ($p['estado'] === 'Esgotado' ? 'danger' : 'warning') ?>"><?= htmlspecialchars($p['estado']) ?></span></td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-success me-1"
+                                        onclick="editarProduto(this)"
+                                        data-id="<?= $p['id'] ?>"
+                                        data-nome="<?= htmlspecialchars($p['nome']) ?>"
+                                        data-categoria-id="<?= $p['categoria_id'] ?>"
+                                        data-preco="<?= $p['preco'] ?>"
+                                        data-estoque="<?= $p['estoque'] ?>"
+                                        data-estado="<?= htmlspecialchars($p['estado']) ?>"
+                                        data-descricao="<?= htmlspecialchars($p['descricao'] ?? '') ?>">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarProduto(<?= $p['id'] ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
             <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalProdutos">Total: 0 produtos</span>
+                <span class="text-muted small" id="totalProdutos">Total: <?= count($lista) ?> produtos</span>
             </div>
         </div>
 
@@ -104,59 +150,73 @@ $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
     <div class="modal fade" id="modalProduto" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #1a3c2a; color: white;">
-                    <h5 class="modal-title" id="modalProdutoTitulo"><i class="fas fa-box me-2"></i> Novo Produto</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formProduto">
-                        <input type="hidden" id="produtoId">
+                <form id="formProduto" method="post" action="/index.php?rota=produtos.guardar" enctype="multipart/form-data">
+                    <?= Csrf::campo() ?>
+                    <input type="hidden" name="id" id="produtoId">
+                    <div class="modal-header" style="background: #1a3c2a; color: white;">
+                        <h5 class="modal-title" id="modalProdutoTitulo"><i class="fas fa-box me-2"></i> Novo Produto</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Nome</label>
-                                <input type="text" class="form-control" id="nomeProduto" placeholder="Ex: Bife a Casa" required>
+                                <input type="text" name="nome" class="form-control" id="nomeProduto" placeholder="Ex: Bife a Casa" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">Categoria</label>
-                                <select class="form-select" id="categoriaProduto" required>
+                                <select class="form-select" name="categoria_id" id="categoriaProduto" required>
                                     <option value="">Selecione</option>
-                                    <option value="Bebidas">Bebidas</option>
-                                    <option value="Entradas">Entradas</option>
-                                    <option value="Pratos Principais">Pratos Principais</option>
-                                    <option value="Sobremesas">Sobremesas</option>
-                                    <option value="Acompanhamentos">Acompanhamentos</option>
+                                    <?php foreach ($categorias as $c): ?>
+                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nome']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Descricao</label>
+                            <textarea name="descricao" class="form-control" id="descricaoProduto" rows="2" placeholder="Descricao (opcional)"></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-semibold">Preco (Kz)</label>
-                                <input type="number" class="form-control" id="precoProduto" placeholder="0.00" step="0.01" required>
+                                <input type="number" name="preco" class="form-control" id="precoProduto" placeholder="0.00" step="0.01" required>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-semibold">Stock</label>
-                                <input type="number" class="form-control" id="stockProduto" placeholder="0" required>
+                                <input type="number" name="estoque" class="form-control" id="stockProduto" placeholder="0" required>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-semibold">Status</label>
-                                <select class="form-select" id="statusProduto">
+                                <select class="form-select" name="estado" id="statusProduto">
                                     <option value="Disponivel">Disponivel</option>
                                     <option value="Indisponivel">Indisponivel</option>
                                     <option value="Esgotado">Esgotado</option>
                                 </select>
                             </div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn" style="background: #c9a84c; color: #1a3c2a;" onclick="salvarProduto()">
-                        <i class="fas fa-save me-1"></i> <span id="btnSalvarProduto">Salvar</span>
-                    </button>
-                </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Imagem</label>
+                            <input type="file" name="imagem" class="form-control" id="imagemProduto" accept="image/png, image/jpeg, image/webp" onchange="preVisualizarImagem(this)">
+                            <div class="form-text">JPG, PNG ou WEBP, ate 2MB. Deixa em branco para manter a imagem actual.</div>
+                            <img id="previaImagemProduto" src="" alt="" style="display: none; width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-top: 8px;">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                            <i class="fas fa-save me-1"></i> <span id="btnSalvarProduto">Salvar</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    <form id="formEliminarProduto" method="post" action="/index.php?rota=produtos.eliminar" style="display: none;">
+        <?= Csrf::campo() ?>
+        <input type="hidden" name="id" id="eliminarProdutoId">
+    </form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/admin.js"></script>
