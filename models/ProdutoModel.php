@@ -33,35 +33,60 @@ class ProdutoModel extends Model
     }
 
     // Pesquisa por nome, codigo (o id do produto) e categoria, cada
-    // filtro so entra na consulta se vier preenchido.
-    public function pesquisar(?string $nome, ?int $codigo, ?int $categoriaId): array
+    // filtro so entra na consulta se vier preenchido. Chamado tanto
+    // no carregamento normal da pagina (sem filtros, pagina 1) como
+    // pelo endpoint AJAX de pesquisa em tempo real. Devolve os
+    // produtos da pagina pedida mais os dados para desenhar a
+    // paginacao (total de resultados e total de paginas).
+    public function pesquisar(?string $nome, ?int $codigo, ?int $categoriaId, int $pagina = 1, int $porPagina = 10): array
     {
-        $sql = 'SELECT p.*, c.nome AS categoria_nome
-                FROM produtos p
-                JOIN categorias c ON c.id = p.categoria_id
-                WHERE 1 = 1';
+        $condicoes = 'WHERE 1 = 1';
         $parametros = [];
 
         if ($nome) {
-            $sql .= ' AND p.nome LIKE ?';
+            $condicoes .= ' AND p.nome LIKE ?';
             $parametros[] = "%$nome%";
         }
 
         if ($codigo) {
-            $sql .= ' AND p.id = ?';
+            $condicoes .= ' AND p.id = ?';
             $parametros[] = $codigo;
         }
 
         if ($categoriaId) {
-            $sql .= ' AND p.categoria_id = ?';
+            $condicoes .= ' AND p.categoria_id = ?';
             $parametros[] = $categoriaId;
         }
 
-        $sql .= ' ORDER BY p.nome';
+        $totalStmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM produtos p JOIN categorias c ON c.id = p.categoria_id $condicoes"
+        );
+        $totalStmt->execute($parametros);
+        $total = (int) $totalStmt->fetchColumn();
+
+        $pagina = max(1, $pagina);
+        $porPagina = max(1, $porPagina);
+        $offset = ($pagina - 1) * $porPagina;
+
+        // LIMIT/OFFSET nao aceitam bind normal com prepared
+        // statements nativos (PDO::ATTR_EMULATE_PREPARES esta
+        // desligado). Como os dois valores ja passaram por (int) em
+        // PHP, meter direto na string e seguro, nao vem de input cru.
+        $sql = "SELECT p.*, c.nome AS categoria_nome
+                FROM produtos p
+                JOIN categorias c ON c.id = p.categoria_id
+                $condicoes
+                ORDER BY p.nome
+                LIMIT $porPagina OFFSET $offset";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($parametros);
 
-        return $stmt->fetchAll();
+        return [
+            'produtos' => $stmt->fetchAll(),
+            'total' => $total,
+            'totalPaginas' => max(1, (int) ceil($total / $porPagina)),
+            'paginaAtual' => $pagina,
+        ];
     }
 }

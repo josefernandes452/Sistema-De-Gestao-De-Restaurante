@@ -10,6 +10,9 @@
 # Dependências
 /vendor/
 
+# Cache de resultados do PHPUnit (gerado automaticamente ao correr os testes)
+.phpunit.result.cache
+
 # Ficheiros de sistema/editor
 .DS_Store
 Thumbs.db

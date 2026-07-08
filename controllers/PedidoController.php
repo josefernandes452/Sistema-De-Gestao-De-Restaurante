@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/ProdutoModel.php';
 require_once __DIR__ . '/../models/MesaModel.php';
 require_once __DIR__ . '/../models/LogModel.php';
 require_once __DIR__ . '/../models/ClienteModel.php';
+require_once __DIR__ . '/../models/NotificacaoModel.php';
 
 class PedidoController extends Controller
 {
@@ -220,6 +221,12 @@ class PedidoController extends Controller
         $this->mesaModel->atualizar($mesaId, ['estado' => 'Ocupada']);
 
         $this->logModel->registar($utilizadorId, 'Pedido feito pelo cliente', "Pedido #$pedidoId, mesa #$mesaId");
+
+        (new NotificacaoModel())->criarParaPerfis(
+            ['Administrador', 'Operador'],
+            "Novo pedido #$pedidoId na mesa #$mesaId",
+            '/views/admin/pedidos.php'
+        );
 
         $this->redirecionar('/views/cliente/acompanhamento.php?id=' . $pedidoId);
     }

@@ -199,6 +199,107 @@ function preVisualizarImagem(input) {
     leitor.readAsDataURL(input.files[0]);
 }
 
+// Pesquisa em tempo real: a cada letra digitada (ou mudanca de
+// categoria, ou clique numa pagina), busca so os produtos certos no
+// servidor via fetch() e redesenha a tabela, sem recarregar a pagina.
+// O debounce evita mandar um pedido a cada tecla, so pesquisa quando
+// a pessoa para de escrever por 300ms.
+var temporizadorPesquisaProdutos = null;
+
+function pesquisarProdutosAjax(pagina) {
+    clearTimeout(temporizadorPesquisaProdutos);
+
+    temporizadorPesquisaProdutos = setTimeout(function () {
+        var nome = document.getElementById('pesquisaNomeProduto').value;
+        var codigo = document.getElementById('pesquisaCodigoProduto').value;
+        var categoriaId = document.getElementById('pesquisaCategoriaProduto').value;
+
+        var parametros = new URLSearchParams({
+            rota: 'produtos.pesquisar-ajax',
+            nome: nome,
+            codigo: codigo,
+            categoria_id: categoriaId,
+            pagina: pagina || 1
+        });
+
+        fetch('/index.php?' + parametros.toString())
+            .then(function (resposta) { return resposta.json(); })
+            .then(function (dados) {
+                renderizarTabelaProdutos(dados.produtos, (dados.paginaAtual - 1) * 10);
+                renderizarPaginacaoProdutos(dados.paginaAtual, dados.totalPaginas);
+                document.getElementById('totalProdutos').textContent = 'Total: ' + dados.total + ' produtos';
+            });
+    }, 300);
+}
+
+function limparPesquisaProdutos() {
+    document.getElementById('pesquisaNomeProduto').value = '';
+    document.getElementById('pesquisaCodigoProduto').value = '';
+    document.getElementById('pesquisaCategoriaProduto').value = '';
+    pesquisarProdutosAjax(1);
+}
+
+function renderizarTabelaProdutos(produtos, indiceInicial) {
+    var corpo = document.getElementById('tabelaProdutos');
+    if (!produtos.length) {
+        corpo.innerHTML = '<tr><td colspan="8" class="text-muted text-center py-3">Nenhum produto encontrado.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    produtos.forEach(function (p, i) {
+        var imagemHtml = p.imagem
+            ? '<img src="../../assets/uploads/' + escaparHtml(p.imagem) + '" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px;">'
+            : '<div style="width: 40px; height: 40px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-utensils text-muted"></i></div>';
+
+        var corStatus = p.estado === 'Disponivel' ? 'success' : (p.estado === 'Esgotado' ? 'danger' : 'warning');
+
+        html += '<tr>' +
+            '<td>' + (indiceInicial + i + 1) + '</td>' +
+            '<td>' + imagemHtml + '</td>' +
+            '<td>' + escaparHtml(p.nome) + '</td>' +
+            '<td><span class="badge bg-secondary">' + escaparHtml(p.categoria_nome) + '</span></td>' +
+            '<td><strong>Kz ' + parseFloat(p.preco).toFixed(2) + '</strong></td>' +
+            '<td>' + p.estoque + '</td>' +
+            '<td><span class="badge bg-' + corStatus + '">' + escaparHtml(p.estado) + '</span></td>' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-sm btn-outline-success me-1" onclick="editarProduto(this)"' +
+                    ' data-id="' + p.id + '"' +
+                    ' data-nome="' + escaparHtml(p.nome) + '"' +
+                    ' data-categoria-id="' + p.categoria_id + '"' +
+                    ' data-preco="' + p.preco + '"' +
+                    ' data-estoque="' + p.estoque + '"' +
+                    ' data-estado="' + escaparHtml(p.estado) + '"' +
+                    ' data-descricao="' + escaparHtml(p.descricao || '') + '">' +
+                    '<i class="fas fa-edit"></i>' +
+                '</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarProduto(' + p.id + ')"><i class="fas fa-trash"></i></button>' +
+            '</td>' +
+        '</tr>';
+    });
+
+    corpo.innerHTML = html;
+}
+
+function renderizarPaginacaoProdutos(paginaAtual, totalPaginas) {
+    var nav = document.getElementById('paginacaoProdutos');
+    if (!nav) return;
+
+    if (totalPaginas <= 1) {
+        nav.innerHTML = '';
+        return;
+    }
+
+    var html = '<ul class="pagination pagination-sm mb-0">';
+    for (var p = 1; p <= totalPaginas; p++) {
+        html += '<li class="page-item' + (p === paginaAtual ? ' active' : '') + '">' +
+            '<a class="page-link" href="#" onclick="event.preventDefault(); pesquisarProdutosAjax(' + p + ')">' + p + '</a>' +
+        '</li>';
+    }
+    html += '</ul>';
+    nav.innerHTML = html;
+}
+
 // ============================================
 // MESAS - CRUD
 // ============================================
@@ -477,4 +578,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Produtos: a tabela e a paginacao ja vem desenhadas do servidor
+    // na primeira visita, mas so a paginacao (nao ha ainda nenhum
+    // numero de pagina desenhado no PHP). Buscamos logo a pagina 1
+    // via AJAX para a barra de paginas aparecer certa desde o inicio.
+    if (document.getElementById('pesquisaNomeProduto')) {
+        pesquisarProdutosAjax(1);
+    }
 });

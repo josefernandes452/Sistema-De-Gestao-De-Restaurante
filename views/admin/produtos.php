@@ -12,9 +12,12 @@ $pesquisaCodigo = Validador::inteiro($_GET['codigo'] ?? '') ?: null;
 $pesquisaCategoria = Validador::inteiro($_GET['categoria_id'] ?? '') ?: null;
 $emPesquisa = $pesquisaNome !== '' || $pesquisaCodigo || $pesquisaCategoria;
 
-$lista = $emPesquisa
-    ? $produtoModel->pesquisar($pesquisaNome ?: null, $pesquisaCodigo, $pesquisaCategoria)
-    : $produtoModel->todosComCategoria();
+// So serve para desenhar a tabela na primeira vez que a pagina abre.
+// A partir dai, a pesquisa e a paginacao passam a ser feitas via
+// AJAX (ver produtos.pesquisar-ajax e o script no fim do ficheiro),
+// sem recarregar a pagina.
+$resultado = $produtoModel->pesquisar($pesquisaNome ?: null, $pesquisaCodigo, $pesquisaCategoria, 1, 10);
+$lista = $resultado['produtos'];
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -64,6 +67,7 @@ $lista = $emPesquisa
                 <span class="fw-semibold ms-2">Gestao de Produtos</span>
             </div>
             <div class="user-info">
+                <?php include __DIR__ . '/_notificacoes-bell.php'; ?>
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
@@ -81,18 +85,18 @@ $lista = $emPesquisa
             </div>
         <?php endif; ?>
 
-        <form method="get" class="row g-2 mb-4 align-items-end">
+        <form id="formPesquisaProdutos" method="get" class="row g-2 mb-4 align-items-end" onsubmit="return false">
             <div class="col-md-4">
                 <label class="form-label small text-muted mb-1">Nome</label>
-                <input type="text" name="nome" class="form-control" placeholder="Pesquisar por nome..." value="<?= htmlspecialchars($pesquisaNome) ?>">
+                <input type="text" name="nome" id="pesquisaNomeProduto" class="form-control" placeholder="Pesquisar por nome..." value="<?= htmlspecialchars($pesquisaNome) ?>" oninput="pesquisarProdutosAjax(1)">
             </div>
             <div class="col-md-2">
                 <label class="form-label small text-muted mb-1">Codigo</label>
-                <input type="number" name="codigo" class="form-control" placeholder="#" value="<?= htmlspecialchars((string) ($pesquisaCodigo ?? '')) ?>">
+                <input type="number" name="codigo" id="pesquisaCodigoProduto" class="form-control" placeholder="#" value="<?= htmlspecialchars((string) ($pesquisaCodigo ?? '')) ?>" oninput="pesquisarProdutosAjax(1)">
             </div>
             <div class="col-md-3">
                 <label class="form-label small text-muted mb-1">Categoria</label>
-                <select name="categoria_id" class="form-select">
+                <select name="categoria_id" id="pesquisaCategoriaProduto" class="form-select" onchange="pesquisarProdutosAjax(1)">
                     <option value="">Todas</option>
                     <?php foreach ($categorias as $c): ?>
                         <option value="<?= $c['id'] ?>" <?= $pesquisaCategoria === (int) $c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['nome']) ?></option>
@@ -100,12 +104,8 @@ $lista = $emPesquisa
                 </select>
             </div>
             <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn flex-grow-1" style="background: #c9a84c; color: #1a3c2a;">
-                    <i class="fas fa-search me-1"></i> Pesquisar
-                </button>
-                <?php if ($emPesquisa): ?>
-                    <a href="produtos.php" class="btn btn-outline-secondary" title="Limpar pesquisa"><i class="fas fa-times"></i></a>
-                <?php endif; ?>
+                <span class="text-muted small align-self-center"><i class="fas fa-bolt" style="color: #c9a84c;"></i> Pesquisa em tempo real</span>
+                <button type="button" class="btn btn-outline-secondary" title="Limpar pesquisa" onclick="limparPesquisaProdutos()"><i class="fas fa-times"></i></button>
             </div>
         </form>
 
@@ -167,8 +167,9 @@ $lista = $emPesquisa
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalProdutos">Total: <?= count($lista) ?> produtos</span>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="text-muted small" id="totalProdutos">Total: <?= $resultado['total'] ?> produtos</span>
+                <nav id="paginacaoProdutos"></nav>
             </div>
         </div>
 

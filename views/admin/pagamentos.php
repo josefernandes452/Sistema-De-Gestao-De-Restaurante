@@ -6,7 +6,10 @@ $pagamentoModel = new PagamentoModel();
 $pedidoModel = new PedidoModel();
 
 $lista = $pagamentoModel->todosComDetalhes();
-$pedidos = $pedidoModel->todosComDetalhes();
+// Aqui e so para o dropdown "Escolher Pedido" do formulario de
+// pagamento, por isso pedimos uma pagina bem grande em vez da
+// paginacao normal, para aparecerem todos os pedidos.
+$pedidos = $pedidoModel->todosComDetalhes(null, null, null, 1, 10000)['pedidos'];
 $flash = Sessao::consumirFlash();
 
 $corEstadoPagamento = ['Pago' => 'success', 'Pendente' => 'warning', 'Cancelado' => 'danger'];
@@ -59,6 +62,7 @@ $corEstadoPagamento = ['Pago' => 'success', 'Pendente' => 'warning', 'Cancelado'
                 <span class="fw-semibold ms-2">Gestao de Pagamentos</span>
             </div>
             <div class="user-info">
+                <?php include __DIR__ . '/_notificacoes-bell.php'; ?>
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>

@@ -59,10 +59,21 @@ index.php
 | pagamentos | Pagamentos associados a pedidos |
 | logs | Registo de ações sensíveis |
 | reservas *(bónus)* | Reservas de mesa |
+| notificacoes *(bónus)* | Avisos para Administrador/Operador (novo pedido, nova reserva) |
 
 ## 🌐 API pública utilizada
 
 **Exchange Rate API** — conversão Kwanza ↔ USD/EUR (exibida no dashboard / cardápio).
+
+## ✅ Testes automatizados
+
+O projeto usa PHPUnit. Depois de correres `composer install`, corre:
+
+```
+php vendor/bin/phpunit
+```
+
+Os testes cobrem o `Validador` (validação central usada em todos os formulários) e o bloqueio de conflito de reservas (`ReservaModel::existeConflito`). Este último usa a base de dados real, mas está protegido dentro de uma transação que é sempre desfeita no fim, então não deixa nenhum dado de teste na tua base.
 
 ---
 

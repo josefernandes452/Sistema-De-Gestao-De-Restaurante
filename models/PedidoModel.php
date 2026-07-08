@@ -9,63 +9,80 @@ class PedidoModel extends Model
     // Lista os pedidos com o numero da mesa, o nome do cliente (se
     // houver) e os itens de cada um, tudo pronto para a tela de
     // gestao de pedidos. Os filtros (codigo do pedido, intervalo de
-    // datas) so entram na consulta se vierem preenchidos.
-    public function todosComDetalhes(?int $codigo = null, ?string $dataInicio = null, ?string $dataFim = null): array
+    // datas) so entram na consulta se vierem preenchidos. Devolve ja
+    // paginado, junto com o total de resultados e de paginas.
+    public function todosComDetalhes(?int $codigo = null, ?string $dataInicio = null, ?string $dataFim = null, int $pagina = 1, int $porPagina = 10): array
     {
-        $sql = 'SELECT p.*, m.numero AS mesa_numero, c.nome AS cliente_nome
-                FROM pedidos p
-                JOIN mesas m ON m.id = p.mesa_id
-                LEFT JOIN clientes c ON c.id = p.cliente_id
-                WHERE 1 = 1';
+        $condicoes = 'WHERE 1 = 1';
         $parametros = [];
 
         if ($codigo) {
-            $sql .= ' AND p.id = ?';
+            $condicoes .= ' AND p.id = ?';
             $parametros[] = $codigo;
         }
 
         if ($dataInicio) {
-            $sql .= ' AND DATE(p.criado_em) >= ?';
+            $condicoes .= ' AND DATE(p.criado_em) >= ?';
             $parametros[] = $dataInicio;
         }
 
         if ($dataFim) {
-            $sql .= ' AND DATE(p.criado_em) <= ?';
+            $condicoes .= ' AND DATE(p.criado_em) <= ?';
             $parametros[] = $dataFim;
         }
 
-        $sql .= ' ORDER BY p.criado_em DESC';
+        $totalStmt = $this->pdo->prepare("SELECT COUNT(*) FROM pedidos p $condicoes");
+        $totalStmt->execute($parametros);
+        $total = (int) $totalStmt->fetchColumn();
+
+        $pagina = max(1, $pagina);
+        $porPagina = max(1, $porPagina);
+        $offset = ($pagina - 1) * $porPagina;
+
+        // LIMIT/OFFSET direto na string: os dois ja passaram por
+        // (int) em PHP, entao e seguro (ver o mesmo comentario em
+        // ProdutoModel::pesquisar).
+        $sql = "SELECT p.*, m.numero AS mesa_numero, c.nome AS cliente_nome
+                FROM pedidos p
+                JOIN mesas m ON m.id = p.mesa_id
+                LEFT JOIN clientes c ON c.id = p.cliente_id
+                $condicoes
+                ORDER BY p.criado_em DESC
+                LIMIT $porPagina OFFSET $offset";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($parametros);
         $pedidos = $stmt->fetchAll();
 
-        if (!$pedidos) {
-            return [];
+        if ($pedidos) {
+            $ids = array_column($pedidos, 'id');
+            $marcadores = implode(',', array_fill(0, count($ids), '?'));
+
+            $stmt = $this->pdo->prepare(
+                "SELECT ip.*, pr.nome AS produto_nome
+                 FROM itens_pedido ip
+                 JOIN produtos pr ON pr.id = ip.produto_id
+                 WHERE ip.pedido_id IN ($marcadores)"
+            );
+            $stmt->execute($ids);
+            $itens = $stmt->fetchAll();
+
+            $itensPorPedido = [];
+            foreach ($itens as $item) {
+                $itensPorPedido[$item['pedido_id']][] = $item;
+            }
+
+            foreach ($pedidos as &$pedido) {
+                $pedido['itens'] = $itensPorPedido[$pedido['id']] ?? [];
+            }
         }
 
-        $ids = array_column($pedidos, 'id');
-        $marcadores = implode(',', array_fill(0, count($ids), '?'));
-
-        $stmt = $this->pdo->prepare(
-            "SELECT ip.*, pr.nome AS produto_nome
-             FROM itens_pedido ip
-             JOIN produtos pr ON pr.id = ip.produto_id
-             WHERE ip.pedido_id IN ($marcadores)"
-        );
-        $stmt->execute($ids);
-        $itens = $stmt->fetchAll();
-
-        $itensPorPedido = [];
-        foreach ($itens as $item) {
-            $itensPorPedido[$item['pedido_id']][] = $item;
-        }
-
-        foreach ($pedidos as &$pedido) {
-            $pedido['itens'] = $itensPorPedido[$pedido['id']] ?? [];
-        }
-
-        return $pedidos;
+        return [
+            'pedidos' => $pedidos,
+            'total' => $total,
+            'totalPaginas' => max(1, (int) ceil($total / $porPagina)),
+            'paginaAtual' => $pagina,
+        ];
     }
 
     // Usado na tela de acompanhamento do cliente: um pedido so, com

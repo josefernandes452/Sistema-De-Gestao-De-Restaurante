@@ -169,3 +169,19 @@ CREATE TABLE reservas (
     FOREIGN KEY (mesa_id) REFERENCES mesas(id) ON DELETE CASCADE,
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------
+-- NOTIFICACOES (bonus)
+-- Avisos para Administrador/Operador quando algo acontece do lado
+-- do cliente (novo pedido, nova reserva), para nao terem de andar a
+-- verificar as listas manualmente.
+-- ---------------------------------------------------------------
+CREATE TABLE notificacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilizador_id INT NOT NULL,
+    mensagem VARCHAR(255) NOT NULL,
+    link VARCHAR(255),
+    lida TINYINT(1) NOT NULL DEFAULT 0,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

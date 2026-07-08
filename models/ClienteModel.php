@@ -6,18 +6,32 @@ class ClienteModel extends Model
 {
     protected string $tabela = 'clientes';
 
-    // Conta os pedidos de cada cliente (o pedido em si ainda vai ser
-    // construido no Dia 7, mas a consulta ja fica pronta para quando
-    // a tabela pedidos tiver dados).
-    public function todosComContagemPedidos(): array
+    // Conta os pedidos de cada cliente. Devolve ja paginado, junto
+    // com o total de clientes e de paginas.
+    public function todosComContagemPedidos(int $pagina = 1, int $porPagina = 10): array
     {
-        $sql = 'SELECT c.*, COUNT(p.id) AS total_pedidos
+        $total = (int) $this->pdo->query('SELECT COUNT(*) FROM clientes')->fetchColumn();
+
+        $pagina = max(1, $pagina);
+        $porPagina = max(1, $porPagina);
+        $offset = ($pagina - 1) * $porPagina;
+
+        // LIMIT/OFFSET direto na string: os dois ja passaram por
+        // (int) em PHP, entao e seguro (ver o mesmo comentario em
+        // ProdutoModel::pesquisar).
+        $sql = "SELECT c.*, COUNT(p.id) AS total_pedidos
                 FROM clientes c
                 LEFT JOIN pedidos p ON p.cliente_id = c.id
                 GROUP BY c.id
-                ORDER BY c.nome';
+                ORDER BY c.nome
+                LIMIT $porPagina OFFSET $offset";
 
-        return $this->pdo->query($sql)->fetchAll();
+        return [
+            'clientes' => $this->pdo->query($sql)->fetchAll(),
+            'total' => $total,
+            'totalPaginas' => max(1, (int) ceil($total / $porPagina)),
+            'paginaAtual' => $pagina,
+        ];
     }
 
     public function buscarPorUtilizadorId(int $utilizadorId): array|false

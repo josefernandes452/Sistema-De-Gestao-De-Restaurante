@@ -3,7 +3,9 @@ require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
 
 $clienteModel = new ClienteModel();
-$lista = $clienteModel->todosComContagemPedidos();
+$paginaAtual = Validador::inteiro($_GET['pagina'] ?? '') ?: 1;
+$resultado = $clienteModel->todosComContagemPedidos($paginaAtual, 10);
+$lista = $resultado['clientes'];
 $flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
@@ -54,6 +56,7 @@ $flash = Sessao::consumirFlash();
                 <span class="fw-semibold ms-2">Gestao de Clientes</span>
             </div>
             <div class="user-info">
+                <?php include __DIR__ . '/_notificacoes-bell.php'; ?>
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>
@@ -128,8 +131,19 @@ $flash = Sessao::consumirFlash();
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer bg-white d-flex justify-content-between">
-                <span class="text-muted small" id="totalClientes">Total: <?= count($lista) ?> clientes</span>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="text-muted small" id="totalClientes">Total: <?= $resultado['total'] ?> clientes</span>
+                <?php if ($resultado['totalPaginas'] > 1): ?>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <?php for ($p = 1; $p <= $resultado['totalPaginas']; $p++): ?>
+                                <li class="page-item<?= $p === $paginaAtual ? ' active' : '' ?>">
+                                    <a class="page-link" href="clientes.php?pagina=<?= $p ?>"><?= $p ?></a>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
             </div>
         </div>
 

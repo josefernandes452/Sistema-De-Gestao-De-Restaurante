@@ -4,6 +4,7 @@ require_once __DIR__ . '/Controller.php';
 require_once __DIR__ . '/../models/ReservaModel.php';
 require_once __DIR__ . '/../models/ClienteModel.php';
 require_once __DIR__ . '/../models/LogModel.php';
+require_once __DIR__ . '/../models/NotificacaoModel.php';
 
 class ReservaController extends Controller
 {
@@ -76,6 +77,12 @@ class ReservaController extends Controller
             Sessao::estaLogado() ? Sessao::utilizadorAtual()['id'] : null,
             'Reserva criada',
             "Reserva #$reservaId, mesa #$mesaId, $data $hora"
+        );
+
+        (new NotificacaoModel())->criarParaPerfis(
+            ['Administrador', 'Operador'],
+            "Nova reserva de $nome para $data as $hora (mesa #$mesaId)",
+            '/views/admin/reservas.php'
         );
 
         Sessao::flash('sucesso', 'Reserva confirmada! Esperamos por ti.');

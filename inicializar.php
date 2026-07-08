@@ -23,6 +23,7 @@ require_once __DIR__ . '/models/Model.php';
 require_once __DIR__ . '/models/UsuarioModel.php';
 require_once __DIR__ . '/models/ClienteModel.php';
 require_once __DIR__ . '/models/RelatorioModel.php';
+require_once __DIR__ . '/models/NotificacaoModel.php';
 require_once __DIR__ . '/controllers/Controller.php';
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/UtilizadorController.php';
@@ -34,6 +35,7 @@ require_once __DIR__ . '/controllers/PedidoController.php';
 require_once __DIR__ . '/controllers/PagamentoController.php';
 require_once __DIR__ . '/controllers/RelatorioController.php';
 require_once __DIR__ . '/controllers/ReservaController.php';
+require_once __DIR__ . '/controllers/NotificacaoController.php';
 
 Sessao::iniciar();
 LembrarMe::autoLogar();

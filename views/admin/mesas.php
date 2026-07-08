@@ -54,6 +54,7 @@ $flash = Sessao::consumirFlash();
                 <span class="fw-semibold ms-2">Gestao de Mesas</span>
             </div>
             <div class="user-info">
+                <?php include __DIR__ . '/_notificacoes-bell.php'; ?>
                 <span class="text-muted small d-none d-md-inline">
                     <i class="fas fa-clock me-1"></i> <span id="relogio"></span>
                 </span>

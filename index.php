@@ -51,6 +51,10 @@ switch ($rota) {
         (new ProdutoController())->eliminar();
         break;
 
+    case 'produtos.pesquisar-ajax':
+        (new ProdutoController())->pesquisarAjax();
+        break;
+
     case 'mesas.guardar':
         (new MesaController())->guardar();
         break;
@@ -113,6 +117,10 @@ switch ($rota) {
 
     case 'reservas.eliminar':
         (new ReservaController())->eliminar();
+        break;
+
+    case 'notificacoes.marcar-todas':
+        (new NotificacaoController())->marcarTodas();
         break;
 
     default:

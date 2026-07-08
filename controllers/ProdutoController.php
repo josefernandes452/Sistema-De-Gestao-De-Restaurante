@@ -74,4 +74,22 @@ class ProdutoController extends Controller
         Sessao::flash('sucesso', 'Produto eliminado.');
         $this->redirecionar('/views/admin/produtos.php');
     }
+
+    // Endpoint usado pela pesquisa em tempo real de produtos.php: a
+    // cada letra digitada o JS chama isto via fetch() e redesenha so
+    // a tabela, sem recarregar a pagina toda.
+    public function pesquisarAjax(): void
+    {
+        header('Content-Type: application/json');
+
+        $nome = Validador::texto($_GET['nome'] ?? '');
+        $codigo = Validador::inteiro($_GET['codigo'] ?? '') ?: null;
+        $categoriaId = Validador::inteiro($_GET['categoria_id'] ?? '') ?: null;
+        $pagina = Validador::inteiro($_GET['pagina'] ?? '') ?: 1;
+
+        $resultado = $this->produtoModel->pesquisar($nome ?: null, $codigo, $categoriaId, $pagina, 10);
+
+        echo json_encode($resultado);
+        exit;
+    }
 }
