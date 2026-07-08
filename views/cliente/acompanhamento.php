@@ -27,6 +27,8 @@ $total = 0;
 foreach ($pedido['itens'] as $item) {
     $total += (float) $item['subtotal'];
 }
+
+$flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -79,6 +81,12 @@ foreach ($pedido['itens'] as $item) {
                             <p class="text-muted">Atualiza sozinho a cada poucos segundos</p>
                         </div>
 
+                        <?php if ($flash): ?>
+                            <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                                <?= htmlspecialchars($flash['mensagem']) ?>
+                            </div>
+                        <?php endif; ?>
+
                         <?php if ($pedido['estado'] === 'Cancelado'): ?>
                             <div class="alert alert-danger text-center">
                                 <i class="fas fa-times-circle me-2"></i> Este pedido foi cancelado.
@@ -113,6 +121,38 @@ foreach ($pedido['itens'] as $item) {
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($pedido['estado'] === 'Pronto'): ?>
+                            <!-- O pedido esta pronto: e aqui que o cliente paga. So depois
+                                 do pagamento e que o pedido passa para Entregue. -->
+                            <div class="alert alert-warning">
+                                <i class="fas fa-utensils me-2"></i> O teu pedido esta pronto! Falta so pagar para ser entregue.
+                            </div>
+                            <form method="post" action="/index.php?rota=pagamentos.pagar-cliente" class="mb-4">
+                                <?= Csrf::campo() ?>
+                                <input type="hidden" name="pedido_id" value="<?= $pedido['id'] ?>">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-semibold small">Como vais pagar?</label>
+                                        <select class="form-select" name="metodo" required>
+                                            <option value="">Seleciona o metodo</option>
+                                            <option value="Cartao de Credito">Cartao de Credito</option>
+                                            <option value="Cartao de Debito">Cartao de Debito</option>
+                                            <option value="Multicaixa Express">Multicaixa Express</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn w-100" style="background: #c9a84c; color: #1a3c2a;">
+                                            <i class="fas fa-check me-1"></i> Pagar Kz <?= number_format($total, 2) ?>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        <?php elseif ($pedido['estado'] === 'Entregue'): ?>
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i> Pagamento confirmado e pedido entregue. Bom apetite!
                             </div>
                         <?php endif; ?>
 

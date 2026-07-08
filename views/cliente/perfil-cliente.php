@@ -1,6 +1,20 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
 $utilizadorLogado = Sessao::exigirPerfil("Cliente");
+
+$clienteModel = new ClienteModel();
+$pedidoModel = new PedidoModel();
+
+$cliente = $clienteModel->buscarPorUtilizadorId($utilizadorLogado['id']);
+$historicoPedidos = $cliente ? $pedidoModel->porCliente($cliente['id']) : [];
+
+$corEstadoPedido = [
+    'Pendente' => 'secondary',
+    'Em Preparacao' => 'warning',
+    'Pronto' => 'info',
+    'Entregue' => 'success',
+    'Cancelado' => 'danger',
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -73,6 +87,47 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
                                 <i class="fas fa-sign-out-alt me-1"></i> Sair
                             </button>
                         </div>
+                    </div>
+
+                    <!-- HISTORICO DE PEDIDOS -->
+                    <div class="card shadow-lg border-0 rounded-4 p-4 mt-4">
+                        <h5 class="fw-bold mb-3" style="color: #1a3c2a;">
+                            <i class="fas fa-receipt me-2"></i> Os Meus Pedidos
+                        </h5>
+                        <?php if (empty($historicoPedidos)): ?>
+                            <p class="text-muted text-center py-3 mb-0">Ainda nao fizeste nenhum pedido.</p>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Mesa</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                            <th>Data</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($historicoPedidos as $p): ?>
+                                            <tr>
+                                                <td>#<?= $p['id'] ?></td>
+                                                <td>Mesa <?= $p['mesa_numero'] ?></td>
+                                                <td><strong>Kz <?= number_format((float) $p['total'], 2) ?></strong></td>
+                                                <td><span class="badge bg-<?= $corEstadoPedido[$p['estado']] ?? 'secondary' ?>"><?= htmlspecialchars($p['estado']) ?></span></td>
+                                                <td class="text-muted small"><?= htmlspecialchars($p['criado_em']) ?></td>
+                                                <td class="text-end">
+                                                    <a href="acompanhamento.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

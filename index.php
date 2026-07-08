@@ -99,6 +99,10 @@ switch ($rota) {
         (new PagamentoController())->eliminar();
         break;
 
+    case 'pagamentos.pagar-cliente':
+        (new PagamentoController())->pagarComoCliente();
+        break;
+
     case 'relatorios.csv':
         (new RelatorioController())->exportarCsv();
         break;

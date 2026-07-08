@@ -104,6 +104,7 @@ $corEstadoPagamento = ['Pago' => 'success', 'Pendente' => 'warning', 'Cancelado'
                             <th>Cliente</th>
                             <th>Valor</th>
                             <th>Metodo</th>
+                            <th>Origem</th>
                             <th>Status</th>
                             <th>Data</th>
                             <th class="text-center">Acoes</th>
@@ -117,6 +118,13 @@ $corEstadoPagamento = ['Pago' => 'success', 'Pendente' => 'warning', 'Cancelado'
                                 <td><?= htmlspecialchars($pg['cliente_nome'] ?: 'Cliente avulso') ?></td>
                                 <td><strong>Kz <?= number_format((float) $pg['valor'], 2) ?></strong></td>
                                 <td><span class="badge bg-info"><?= htmlspecialchars($pg['metodo']) ?></span></td>
+                                <td>
+                                    <?php if ($pg['origem'] === 'Cliente'): ?>
+                                        <span class="badge bg-primary"><i class="fas fa-user me-1"></i>Pago pelo cliente</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Registado pelo operador</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><span class="badge bg-<?= $corEstadoPagamento[$pg['estado']] ?? 'secondary' ?>"><?= htmlspecialchars($pg['estado']) ?></span></td>
                                 <td><?= htmlspecialchars($pg['criado_em']) ?></td>
                                 <td class="text-center">

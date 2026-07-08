@@ -132,6 +132,7 @@ CREATE TABLE pagamentos (
     pedido_id INT NOT NULL,
     valor DECIMAL(10, 2) NOT NULL,
     metodo VARCHAR(50) NOT NULL,
+    origem ENUM('Cliente', 'Operador') NOT NULL DEFAULT 'Operador',
     estado ENUM('Pago', 'Pendente', 'Cancelado') NOT NULL DEFAULT 'Pendente',
     criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE

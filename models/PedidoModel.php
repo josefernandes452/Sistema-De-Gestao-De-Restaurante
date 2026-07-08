@@ -114,6 +114,22 @@ class PedidoModel extends Model
         return $pedido;
     }
 
+    // Historico de pedidos de um cliente, para o perfil dele
+    // (views/cliente/perfil-cliente.php). Do mais recente para o mais antigo.
+    public function porCliente(int $clienteId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT p.*, m.numero AS mesa_numero
+             FROM pedidos p
+             JOIN mesas m ON m.id = p.mesa_id
+             WHERE p.cliente_id = ?
+             ORDER BY p.criado_em DESC'
+        );
+        $stmt->execute([$clienteId]);
+
+        return $stmt->fetchAll();
+    }
+
     // Grava o pedido e os seus itens numa unica transacao: ou fica
     // tudo gravado, ou nada fica (se um item falhar a meio, o
     // pedido nao fica gravado sozinho e sem itens).
