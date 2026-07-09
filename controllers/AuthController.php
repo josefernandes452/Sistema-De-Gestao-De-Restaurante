@@ -120,7 +120,12 @@ class AuthController extends Controller
         $token = bin2hex(random_bytes(16));
         $this->usuarioModel->definirTokenRecuperacao($utilizador['id'], $token);
 
-        $link = 'http://' . $_SERVER['HTTP_HOST'] . '/views/cliente/redefinir-senha.php?token=' . $token;
+        // O link tem de usar o mesmo esquema do pedido atual. Antes estava
+        // fixo em "http://", e por isso quem pedia a recuperacao pelo
+        // saboralma.local (HTTPS, porta 443) recebia um link para a porta
+        // 80, que nao tem nenhum vhost apontado para o projeto e dava 404.
+        $esquema = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $link = $esquema . '://' . $_SERVER['HTTP_HOST'] . '/views/cliente/redefinir-senha.php?token=' . $token;
         $corpo = '<p>Ola ' . htmlspecialchars($utilizador['nome']) . ',</p>'
             . '<p>Pediste para redefinir a senha da tua conta no restaurante Sabor Alma. Clica no link abaixo para escolheres uma nova senha:</p>'
             . '<p><a href="' . $link . '">' . $link . '</a></p>'
