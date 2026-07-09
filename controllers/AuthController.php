@@ -25,7 +25,7 @@ class AuthController extends Controller
         }
 
         if (!Csrf::validar($_POST['csrf_token'] ?? null)) {
-            Sessao::flash('erro', 'A sessao expirou, tenta entrar de novo.');
+            Sessao::flash('erro', 'A sessão expirou, tenta entrar de novo.');
             $this->redirecionar('/views/cliente/login.php');
         }
 
@@ -40,7 +40,7 @@ class AuthController extends Controller
                 'Tentativa de login falhada',
                 "Email usado: $email"
             );
-            Sessao::flash('erro', 'Email ou senha invalidos.');
+            Sessao::flash('erro', 'Email ou senha inválidos.');
             $this->redirecionar('/views/cliente/login.php');
         }
 
@@ -80,7 +80,7 @@ class AuthController extends Controller
         }
 
         if ($this->usuarioModel->emailExiste($email)) {
-            Sessao::flash('erro', 'Ja existe uma conta com este email.');
+            Sessao::flash('erro', 'Já existe uma conta com este email.');
             $this->redirecionar('/views/cliente/registo.php');
         }
 
@@ -99,7 +99,7 @@ class AuthController extends Controller
         // um pedido de verdade.
         $this->clienteModel->criarOuLigarAUtilizador($utilizadorId, $nome, $email, $telefone);
 
-        Sessao::flash('sucesso', 'Conta criada com sucesso. Agora e so entrar.');
+        Sessao::flash('sucesso', 'Conta criada com sucesso. Agora é só entrar.');
         $this->redirecionar('/views/cliente/login.php');
     }
 
@@ -113,7 +113,7 @@ class AuthController extends Controller
         $utilizador = $email ? $this->usuarioModel->buscarPorEmailComPerfil($email) : false;
 
         if (!$utilizador) {
-            Sessao::flash('erro', 'Nao encontramos nenhuma conta com este email.');
+            Sessao::flash('erro', 'Não encontramos nenhuma conta com este email.');
             $this->redirecionar('/views/cliente/login.php');
         }
 
@@ -122,16 +122,16 @@ class AuthController extends Controller
 
         $link = 'http://' . $_SERVER['HTTP_HOST'] . '/views/cliente/redefinir-senha.php?token=' . $token;
         $corpo = '<p>Ola ' . htmlspecialchars($utilizador['nome']) . ',</p>'
-            . '<p>Pediste para redefinir a senha da tua conta no Sabor Alma. Clica no link abaixo para escolheres uma nova senha:</p>'
+            . '<p>Pediste para redefinir a senha da tua conta no restaurante Sabor Alma. Clica no link abaixo para escolheres uma nova senha:</p>'
             . '<p><a href="' . $link . '">' . $link . '</a></p>'
-            . '<p>Este link e valido por 1 hora. Se nao foste tu, ignora este email.</p>';
+            . '<p>Este link e válido por 1 hora.</p>';
 
-        $enviado = Mailer::enviar($utilizador['email'], $utilizador['nome'], 'Recuperacao de senha - Sabor Alma', $corpo);
+        $enviado = Mailer::enviar($utilizador['email'], $utilizador['nome'], 'Recuperação de senha - Sabor Alma', $corpo);
 
         if ($enviado) {
-            Sessao::flash('sucesso', 'Enviamos um email para ' . htmlspecialchars($email) . ' com as instrucoes.');
+            Sessao::flash('sucesso', 'Enviamos um email para ' . htmlspecialchars($email) . ' com as instruções.');
         } else {
-            Sessao::flash('erro', 'Nao foi possivel enviar o email agora. Tenta novamente daqui a pouco.');
+            Sessao::flash('erro', 'Não foi possivel enviar o email agora. Tenta novamente daqui a pouco.');
         }
 
         $this->redirecionar('/views/cliente/login.php');
@@ -150,18 +150,18 @@ class AuthController extends Controller
         $utilizador = $token ? $this->usuarioModel->buscarPorToken($token) : false;
 
         if (!$utilizador) {
-            Sessao::flash('erro', 'Este link ja nao e valido. Pede uma nova recuperacao.');
+            Sessao::flash('erro', 'Este link já não é válido. Pede uma nova recuperação.');
             $this->redirecionar('/views/cliente/login.php');
         }
 
         if (strlen($senha) < 6 || $senha !== $confirmar) {
-            Sessao::flash('erro', 'As senhas tem de ser iguais e ter pelo menos 6 caracteres.');
+            Sessao::flash('erro', 'As senhas tem de ser iguais e terem pelo menos 6 caracteres.');
             $this->redirecionar('/views/cliente/redefinir-senha.php?token=' . urlencode($token));
         }
 
         $this->usuarioModel->atualizarSenha($utilizador['id'], $senha);
 
-        Sessao::flash('sucesso', 'Senha alterada com sucesso. Agora e so entrar.');
+        Sessao::flash('sucesso', 'Senha alterada com sucesso. Agora é só entrar.');
         $this->redirecionar('/views/cliente/login.php');
     }
 
