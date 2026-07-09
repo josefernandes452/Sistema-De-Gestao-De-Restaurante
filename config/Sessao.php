@@ -58,7 +58,37 @@ class Sessao
             exit;
         }
 
+        self::exigirCertificadoSeForAreaAdministrativa($utilizador, $perfis);
+
         return $utilizador;
+    }
+
+    // Camada extra so para a area administrativa: quando o acesso e
+    // feito por HTTPS (https://saboralma.local, configurado no Apache
+    // com SSLVerifyClient require em /views/admin), confirmamos que o
+    // certificado apresentado pertence mesmo a pessoa que fez login,
+    // nao so um certificado qualquer emitido pela mesma CA. Isto fica
+    // parado (nao faz nada) quando se acede por HTTP normal, para nao
+    // bloquear o desenvolvimento/testes do dia a dia, que continuam a
+    // funcionar so com password como sempre funcionaram.
+    private static function exigirCertificadoSeForAreaAdministrativa(array $utilizador, array $perfis): void
+    {
+        $ehAreaAdministrativa = in_array('Administrador', $perfis, true) || in_array('Operador', $perfis, true);
+        $ligacaoSegura = ($_SERVER['HTTPS'] ?? 'off') === 'on';
+
+        if (!$ehAreaAdministrativa || !$ligacaoSegura) {
+            return;
+        }
+
+        $certificadoValido = ($_SERVER['SSL_CLIENT_VERIFY'] ?? '') === 'SUCCESS';
+        $nomeNoCertificado = $_SERVER['SSL_CLIENT_S_DN_CN'] ?? null;
+
+        if (!$certificadoValido || $nomeNoCertificado !== $utilizador['nome']) {
+            self::sair();
+            self::flash('erro', 'A area administrativa exige um certificado digital valido, correspondente a tua conta.');
+            header('Location: /views/cliente/login.php');
+            exit;
+        }
     }
 
     public static function sair(): void

@@ -22,3 +22,9 @@ composer.phar
 # Cache da API de cambio (gerado automaticamente)
 /assets/cache/*.json
 /assets/cache/*.log
+
+# Certificados digitais (mTLS da area administrativa). O .pfx tem a
+# chave privada do certificado, mesmo com senha nao deve ir para o
+# Git. O ca.crt e so a chave publica da CA, esse pode ficar.
+/certificados/*.pfx
+/certificados/*.key
