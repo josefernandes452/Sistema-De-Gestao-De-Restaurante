@@ -7,6 +7,7 @@ $pedidoModel = new PedidoModel();
 
 $cliente = $clienteModel->buscarPorUtilizadorId($utilizadorLogado['id']);
 $historicoPedidos = $cliente ? $pedidoModel->porCliente($cliente['id']) : [];
+$flash = Sessao::consumirFlash();
 
 $corEstadoPedido = [
     'Pendente' => 'secondary',
@@ -52,6 +53,12 @@ $corEstadoPedido = [
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
+                    <?php if ($flash): ?>
+                        <div class="alert alert-<?= $flash['tipo'] === 'erro' ? 'danger' : 'success' ?>" role="alert">
+                            <?= htmlspecialchars($flash['mensagem']) ?>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="card shadow-lg border-0 rounded-4 p-4">
                         <div class="text-center mb-4">
                             <div id="perfilAvatar" style="width: 100px; height: 100px; border-radius: 50%; background: #c9a84c; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; font-weight: 700;">J</div>
@@ -87,6 +94,36 @@ $corEstadoPedido = [
                                 <i class="fas fa-sign-out-alt me-1"></i> Sair
                             </button>
                         </div>
+                    </div>
+
+                    <!-- ALTERAR SENHA -->
+                    <div class="card shadow-lg border-0 rounded-4 p-4 mt-4">
+                        <h5 class="fw-bold mb-3" style="color: #1a3c2a;">
+                            <i class="fas fa-key me-2"></i> Alterar Senha
+                        </h5>
+                        <form method="post" action="/index.php?rota=alterar-senha">
+                            <?= Csrf::campo() ?>
+                            <input type="hidden" name="voltar_para" value="/views/cliente/perfil-cliente.php">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Senha Atual</label>
+                                    <input type="password" name="senha_atual" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Nova Senha</label>
+                                    <input type="password" name="nova_senha" class="form-control" placeholder="Minimo 6 caracteres" required minlength="6">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold">Confirmar Nova Senha</label>
+                                    <input type="password" name="confirmar_nova_senha" class="form-control" required minlength="6">
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn" style="background: #c9a84c; color: #1a3c2a;">
+                                    <i class="fas fa-save me-1"></i> Guardar Nova Senha
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                     <!-- HISTORICO DE PEDIDOS -->

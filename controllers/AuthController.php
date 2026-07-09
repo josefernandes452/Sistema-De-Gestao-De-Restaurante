@@ -170,6 +170,47 @@ class AuthController extends Controller
         $this->redirecionar('/views/cliente/login.php');
     }
 
+    // Diferente da recuperarSenha/redefinirSenha (para quem esqueceu a
+    // senha e nao tem sessao ativa), este e o "trocar a minha senha"
+    // normal, usado por quem ja esta logado e sabe a senha atual.
+    // Serve para os 3 perfis: Administrador, Operador e Cliente.
+    public function alterarSenha(): void
+    {
+        $voltarPara = $_POST['voltar_para'] ?? '/views/cliente/login.php';
+
+        if (!Sessao::estaLogado()) {
+            $this->redirecionar('/views/cliente/login.php');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !Csrf::validar($_POST['csrf_token'] ?? null)) {
+            Sessao::flash('erro', 'A sessão expirou, tenta outra vez.');
+            $this->redirecionar($voltarPara);
+        }
+
+        $utilizadorId = Sessao::utilizadorAtual()['id'];
+        $utilizador = $this->usuarioModel->buscarPorId($utilizadorId);
+
+        $senhaAtual = $_POST['senha_atual'] ?? '';
+        $novaSenha = $_POST['nova_senha'] ?? '';
+        $confirmar = $_POST['confirmar_nova_senha'] ?? '';
+
+        if (!$utilizador || !password_verify($senhaAtual, $utilizador['senha'])) {
+            Sessao::flash('erro', 'A senha atual está incorreta.');
+            $this->redirecionar($voltarPara);
+        }
+
+        if (strlen($novaSenha) < 6 || $novaSenha !== $confirmar) {
+            Sessao::flash('erro', 'A nova senha e a confirmação têm de ser iguais e ter pelo menos 6 caracteres.');
+            $this->redirecionar($voltarPara);
+        }
+
+        $this->usuarioModel->atualizarSenha($utilizadorId, $novaSenha);
+        $this->logModel->registar($utilizadorId, 'Alterou a propria senha', null);
+
+        Sessao::flash('sucesso', 'Senha alterada com sucesso.');
+        $this->redirecionar($voltarPara);
+    }
+
     public function logout(): void
     {
         $utilizador = Sessao::utilizadorAtual();

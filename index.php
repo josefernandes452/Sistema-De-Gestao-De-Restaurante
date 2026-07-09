@@ -23,6 +23,10 @@ switch ($rota) {
         (new AuthController())->redefinirSenha();
         break;
 
+    case 'alterar-senha':
+        (new AuthController())->alterarSenha();
+        break;
+
     case 'logout':
         (new AuthController())->logout();
         break;
