@@ -48,15 +48,19 @@ $corEstado = [
         </div>
         <nav>
             <a href="dashboard.php" class="menu-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <?php if ($utilizadorLogado['perfil'] === 'Administrador'): ?>
             <a href="utilizadores.php" class="menu-item"><i class="fas fa-users"></i> Utilizadores</a>
             <a href="categorias.php" class="menu-item"><i class="fas fa-tags"></i> Categorias</a>
             <a href="produtos.php" class="menu-item"><i class="fas fa-box"></i> Produtos</a>
+            <?php endif; ?>
             <a href="mesas.php" class="menu-item"><i class="fas fa-chair"></i> Mesas</a>
             <a href="clientes.php" class="menu-item"><i class="fas fa-user-friends"></i> Clientes</a>
             <a href="pedidos.php" class="menu-item active"><i class="fas fa-clipboard-list"></i> Pedidos</a>
             <a href="reservas.php" class="menu-item"><i class="fas fa-calendar-check"></i> Reservas</a>
             <a href="pagamentos.php" class="menu-item"><i class="fas fa-credit-card"></i> Pagamentos</a>
+            <?php if ($utilizadorLogado['perfil'] === 'Administrador'): ?>
             <a href="relatorios.php" class="menu-item"><i class="fas fa-chart-bar"></i> Relatorios</a>
+            <?php endif; ?>
         </nav>
         <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 15px 25px;">
             <a href="../cliente/login.php" class="menu-item text-danger" onclick="logout()">

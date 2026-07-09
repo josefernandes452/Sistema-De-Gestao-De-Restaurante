@@ -9,7 +9,8 @@ class ProdutoController extends Controller
 
     public function __construct()
     {
-        Sessao::exigirPerfil('Administrador', 'Operador');
+        // So o Administrador gere o cardapio (categorias/produtos).
+        Sessao::exigirPerfil('Administrador');
         $this->produtoModel = new ProdutoModel();
     }
 

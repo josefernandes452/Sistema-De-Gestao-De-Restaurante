@@ -9,7 +9,10 @@ class CategoriaController extends Controller
 
     public function __construct()
     {
-        Sessao::exigirPerfil('Administrador', 'Operador');
+        // So o Administrador gere o cardapio (categorias/produtos).
+        // O Operador trabalha com mesas, clientes, pedidos, reservas
+        // e pagamentos, nao com a gestao do menu em si.
+        Sessao::exigirPerfil('Administrador');
         $this->categoriaModel = new CategoriaModel();
     }
 

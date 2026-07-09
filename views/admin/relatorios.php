@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
-$utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+$utilizadorLogado = Sessao::exigirPerfil("Administrador");
 
 $dataInicio = Validador::texto($_GET['data_inicio'] ?? '') ?: date('Y-m-d', strtotime('-7 day'));
 $dataFim = Validador::texto($_GET['data_fim'] ?? '') ?: date('Y-m-d');

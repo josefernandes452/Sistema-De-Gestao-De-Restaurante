@@ -13,7 +13,8 @@ class RelatorioController extends Controller
 
     public function __construct()
     {
-        Sessao::exigirPerfil('Administrador', 'Operador');
+        // Relatorios sao coisa do Administrador.
+        Sessao::exigirPerfil('Administrador');
         $this->relatorioModel = new RelatorioModel();
     }
 

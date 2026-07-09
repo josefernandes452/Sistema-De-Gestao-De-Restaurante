@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . "/../../inicializar.php";
-$utilizadorLogado = Sessao::exigirPerfil("Administrador", "Operador");
+$utilizadorLogado = Sessao::exigirPerfil("Administrador");
 
 $produtoModel = new ProdutoModel();
 $categoriaModel = new CategoriaModel();
