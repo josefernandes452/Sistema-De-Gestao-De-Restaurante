@@ -180,10 +180,11 @@ $corEstado = [
         }
 
         function eliminarReserva(id) {
-            if (confirm('Eliminar esta reserva?')) {
+            confirmarAcao('Eliminar esta reserva?').then(function (ok) {
+                if (!ok) return;
                 document.getElementById('eliminarReservaId').value = id;
                 document.getElementById('formEliminarReserva').requestSubmit();
-            }
+            });
         }
     </script>
 </body>

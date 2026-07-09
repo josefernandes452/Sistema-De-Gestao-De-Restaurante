@@ -40,11 +40,74 @@ function fecharSidebar() {
     }
 }
 
+// ============================================
+// MODAL DE CONFIRMACAO
+// Substitui o confirm() nativo do browser (aquela caixa feia
+// "localhost:8000 diz...") por um modal do Bootstrap, mais bonito e
+// consistente com o resto do site. Devolve uma Promise<boolean>,
+// entao usa-se com .then(function (ok) { ... }).
+// ============================================
+function confirmarAcao(mensagem) {
+    return new Promise(function (resolve) {
+        var modalEl = document.getElementById('modalConfirmacao');
+
+        if (!modalEl) {
+            var wrapper = document.createElement('div');
+            wrapper.innerHTML =
+                '<div class="modal fade" id="modalConfirmacao" tabindex="-1">' +
+                    '<div class="modal-dialog modal-dialog-centered">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-body text-center p-4">' +
+                                '<i class="fas fa-question-circle fa-2x mb-3" style="color: #c9a84c;"></i>' +
+                                '<p class="mb-0" id="modalConfirmacaoMensagem"></p>' +
+                            '</div>' +
+                            '<div class="modal-footer justify-content-center border-0 pb-4">' +
+                                '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>' +
+                                '<button type="button" class="btn" style="background: #c9a84c; color: #1a3c2a;" id="modalConfirmacaoOk">Confirmar</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            document.body.appendChild(wrapper.firstElementChild);
+            modalEl = document.getElementById('modalConfirmacao');
+        }
+
+        document.getElementById('modalConfirmacaoMensagem').textContent = mensagem;
+        var modal = new bootstrap.Modal(modalEl);
+        var botaoOk = document.getElementById('modalConfirmacaoOk');
+        var respondida = false;
+
+        function aoConfirmar() {
+            respondida = true;
+            limpar();
+            modal.hide();
+            resolve(true);
+        }
+
+        function aoFechar() {
+            limpar();
+            if (!respondida) resolve(false);
+        }
+
+        function limpar() {
+            botaoOk.removeEventListener('click', aoConfirmar);
+            modalEl.removeEventListener('hidden.bs.modal', aoFechar);
+        }
+
+        botaoOk.addEventListener('click', aoConfirmar);
+        modalEl.addEventListener('hidden.bs.modal', aoFechar);
+
+        modal.show();
+    });
+}
+
 // SAIR
 function logout() {
-    if (confirm('Deseja realmente sair?')) {
-        window.location.href = '/index.php?rota=logout';
-    }
+    confirmarAcao('Deseja realmente sair?').then(function (ok) {
+        if (ok) {
+            window.location.href = '/index.php?rota=logout';
+        }
+    });
 }
 
 // ============================================
@@ -79,10 +142,11 @@ function editarUtilizador(botao) {
 }
 
 function eliminarUtilizador(id) {
-    if (confirm('Tem certeza que deseja eliminar este utilizador?')) {
+    confirmarAcao('Tem certeza que deseja eliminar este utilizador?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarUtilizadorId').value = id;
         document.getElementById('formEliminarUtilizador').submit();
-    }
+    });
 }
 
 function filtrarUtilizadores() {
@@ -126,10 +190,11 @@ function editarCategoria(botao) {
 }
 
 function eliminarCategoria(id) {
-    if (confirm('Tem certeza que deseja eliminar esta categoria?')) {
+    confirmarAcao('Tem certeza que deseja eliminar esta categoria?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarCategoriaId').value = id;
         document.getElementById('formEliminarCategoria').submit();
-    }
+    });
 }
 
 function filtrarCategorias() {
@@ -177,10 +242,11 @@ function editarProduto(botao) {
 }
 
 function eliminarProduto(id) {
-    if (confirm('Tem certeza que deseja eliminar este produto?')) {
+    confirmarAcao('Tem certeza que deseja eliminar este produto?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarProdutoId').value = id;
         document.getElementById('formEliminarProduto').submit();
-    }
+    });
 }
 
 // Mostra uma previa da imagem escolhida antes de guardar o produto.
@@ -325,10 +391,11 @@ function editarMesa(botao) {
 }
 
 function eliminarMesa(id) {
-    if (confirm('Tem certeza que deseja eliminar esta mesa?')) {
+    confirmarAcao('Tem certeza que deseja eliminar esta mesa?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarMesaId').value = id;
         document.getElementById('formEliminarMesa').submit();
-    }
+    });
 }
 
 function filtrarMesas() {
@@ -372,10 +439,11 @@ function editarCliente(botao) {
 }
 
 function eliminarCliente(id) {
-    if (confirm('Tem certeza que deseja eliminar este cliente?')) {
+    confirmarAcao('Tem certeza que deseja eliminar este cliente?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarClienteId').value = id;
         document.getElementById('formEliminarCliente').submit();
-    }
+    });
 }
 
 function filtrarClientes() {
@@ -513,10 +581,11 @@ function editarEstadoPedido(botao) {
 }
 
 function eliminarPedido(id) {
-    if (confirm('Tem certeza que deseja eliminar este pedido?')) {
+    confirmarAcao('Tem certeza que deseja eliminar este pedido?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarPedidoId').value = id;
         document.getElementById('formEliminarPedido').submit();
-    }
+    });
 }
 
 // ============================================
@@ -538,10 +607,11 @@ function preencherValorPagamento(select) {
 }
 
 function eliminarPagamento(id) {
-    if (confirm('Tem certeza que deseja eliminar este pagamento?')) {
+    confirmarAcao('Tem certeza que deseja eliminar este pagamento?').then(function (ok) {
+        if (!ok) return;
         document.getElementById('eliminarPagamentoId').value = id;
         document.getElementById('formEliminarPagamento').submit();
-    }
+    });
 }
 
 function filtrarPagamentos() {
