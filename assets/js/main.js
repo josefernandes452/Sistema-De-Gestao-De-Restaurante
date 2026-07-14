@@ -374,5 +374,46 @@ document.addEventListener('DOMContentLoaded', function() {
             dataInput.min = hoje;
             dataInput.value = hoje;
         }
+
+        var pessoasInput = document.getElementById('pessoasReserva');
+        if (pessoasInput) {
+            ordenarMesasPorPessoas();
+            pessoasInput.addEventListener('input', ordenarMesasPorPessoas);
+        }
     }
 });
+
+// Reordena as opcoes da mesa para o numero de pessoas escrito: as
+// mesas com espaco suficiente aparecem primeiro, da mais ajustada
+// (menos lugares a mais) para a maior. Uma mesa mais pequena do que
+// o grupo nunca aparece, porque ninguem cabe la. Sem numero de
+// pessoas ainda escrito, mostra todas por ordem de capacidade.
+function ordenarMesasPorPessoas() {
+    var select = document.getElementById('mesaReserva');
+    var pessoasInput = document.getElementById('pessoasReserva');
+    if (!select) return;
+
+    var pessoas = parseInt(pessoasInput.value, 10) || 0;
+    var valorAtual = select.value;
+    var opcoes = Array.prototype.slice.call(select.querySelectorAll('option[data-capacidade]'));
+
+    opcoes = opcoes.filter(function (op) {
+        var capacidade = parseInt(op.dataset.capacidade, 10);
+        return pessoas === 0 || capacidade >= pessoas;
+    });
+
+    opcoes.sort(function (a, b) {
+        return parseInt(a.dataset.capacidade, 10) - parseInt(b.dataset.capacidade, 10);
+    });
+
+    var placeholder = select.querySelector('option[value=""]');
+    select.innerHTML = '';
+    if (placeholder) select.appendChild(placeholder);
+    opcoes.forEach(function (op) { select.appendChild(op); });
+
+    // Mantem a mesa escolhida se ainda estiver na lista filtrada;
+    // senao volta ao placeholder, para nao ficar uma mesa pequena
+    // demais selecionada sem o cliente reparar.
+    var aindaExiste = opcoes.some(function (op) { return op.value === valorAtual; });
+    select.value = aindaExiste ? valorAtual : '';
+}

@@ -86,12 +86,12 @@ $flash = Sessao::consumirFlash();
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-semibold">Mesa</label>
-                                    <select class="form-select" name="mesa_id" required>
+                                    <select class="form-select" name="mesa_id" id="mesaReserva" required>
                                         <option value="">Seleciona a mesa</option>
                                         <?php foreach ($mesas as $m): ?>
-                                            <option value="<?= $m['id'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
+                                            <option value="<?= $m['id'] ?>" data-capacidade="<?= (int) $m['capacidade'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
                                         <?php endforeach; ?>
-                                    </select>
+                                    </select> 
                                 </div>
                             </div>
                             <div class="mb-3">

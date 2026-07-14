@@ -4,6 +4,8 @@ $utilizadorLogado = Sessao::exigirPerfil("Cliente");
 
 $produtoModel = new ProdutoModel();
 $mesaModel = new MesaModel();
+$clienteModel = new ClienteModel();
+$reservaModel = new ReservaModel();
 
 $produtosMenu = array_map(
     fn (array $p) => [
@@ -18,6 +20,23 @@ $produtosMenu = array_map(
 );
 
 $mesasLivres = $mesaModel->livres();
+
+// Se o cliente ja tem uma reserva confirmada para hoje, a mesa dela
+// aparece pre-selecionada, para ele nao ter de a escolher outra vez
+// depois de ja a ter marcado. A mesa reservada entra na lista mesmo
+// que por algum motivo nao esteja em "livres" neste momento.
+$cliente = $clienteModel->buscarPorUtilizadorId($utilizadorLogado['id']);
+$reservaHoje = $cliente ? $reservaModel->buscarConfirmadaHojeParaCliente($cliente['id']) : false;
+
+$mesasParaEscolher = $mesasLivres;
+if ($reservaHoje && !in_array((int) $reservaHoje['mesa_id'], array_column($mesasLivres, 'id'), true)) {
+    array_unshift($mesasParaEscolher, [
+        'id' => $reservaHoje['mesa_id'],
+        'numero' => $reservaHoje['mesa_numero'],
+        'capacidade' => $reservaHoje['mesa_capacidade'],
+    ]);
+}
+
 $flash = Sessao::consumirFlash();
 ?>
 <!DOCTYPE html>
@@ -94,13 +113,21 @@ $flash = Sessao::consumirFlash();
 
                             <div class="mb-3">
                                 <label class="form-label fw-semibold small">A tua mesa</label>
-                                <?php if (empty($mesasLivres)): ?>
+                                <?php if ($reservaHoje): ?>
+                                    <p class="text-success small mb-2">
+                                        <i class="fas fa-circle-check me-1"></i>
+                                        Já tens uma reserva hoje às <?= htmlspecialchars(substr($reservaHoje['hora'], 0, 5)) ?> na Mesa <?= htmlspecialchars($reservaHoje['mesa_numero']) ?>. Já a selecionámos por ti.
+                                    </p>
+                                <?php endif; ?>
+                                <?php if (empty($mesasParaEscolher)): ?>
                                     <p class="text-danger small mb-0">Sem mesas livres neste momento. Tenta novamente daqui a pouco.</p>
                                 <?php else: ?>
                                     <select class="form-select" name="mesa_id" required>
                                         <option value="">Seleciona a tua mesa</option>
-                                        <?php foreach ($mesasLivres as $m): ?>
-                                            <option value="<?= $m['id'] ?>">Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)</option>
+                                        <?php foreach ($mesasParaEscolher as $m): ?>
+                                            <option value="<?= $m['id'] ?>" <?= ($reservaHoje && (int) $reservaHoje['mesa_id'] === (int) $m['id']) ? 'selected' : '' ?>>
+                                                Mesa <?= $m['numero'] ?> (<?= $m['capacidade'] ?> pessoas)
+                                            </option>
                                         <?php endforeach; ?>
                                     </select>
                                 <?php endif; ?>
@@ -114,7 +141,7 @@ $flash = Sessao::consumirFlash();
                                 <span>Total:</span>
                                 <span id="totalPedido" style="color: var(--dourado);">Kz 0,00</span>
                             </div>
-                            <button type="button" class="btn btn-primary w-100 mt-3" onclick="finalizarPedido()" <?= empty($mesasLivres) ? 'disabled' : '' ?>>
+                            <button type="button" class="btn btn-primary w-100 mt-3" onclick="finalizarPedido()" <?= empty($mesasParaEscolher) ? 'disabled' : '' ?>>
                                 <i class="fas fa-check me-2"></i> Finalizar Pedido
                             </button>
                         </div>

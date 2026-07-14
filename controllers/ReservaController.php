@@ -62,6 +62,13 @@ class ReservaController extends Controller
             $clienteId = $cliente ? $cliente['id'] : null;
         }
 
+        // Um cliente (com ou sem conta) so pode ter uma reserva por
+        // dia, mesmo que seja para outra mesa ou outra hora.
+        if ($this->reservaModel->existeReservaNoDiaPara($clienteId, $telefone, $data)) {
+            Sessao::flash('erro', 'Ja tens uma reserva marcada para esse dia. So e permitida uma reserva por dia.');
+            $this->redirecionar('/views/cliente/reservas.php');
+        }
+
         $reservaId = $this->reservaModel->inserir([
             'mesa_id' => $mesaId,
             'cliente_id' => $clienteId,
